@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, Calendar, TrendingUp } from 'lucide-react';
+import { CheckCircle2, XCircle, Calendar, TrendingUp, DollarSign, Trophy } from 'lucide-react';
 import { type RaceEntry } from '@/features/entries/types';
 import { formatOdds } from '@/lib/oddsFormat';
 
@@ -35,6 +35,12 @@ export function HistoryList({ entries }: HistoryListProps) {
                     year: 'numeric'
                 });
 
+                const betResult = entry.betDetails ? (
+                    entry.betDetails.result === 'win' ? 
+                        entry.betDetails.betAmount * (entry.betDetails.oddsUsed + 1) - entry.betDetails.betAmount :
+                        -entry.betDetails.betAmount
+                ) : null;
+
                 return (
                     <Card key={entry.id}>
                         <CardHeader className="pb-3">
@@ -60,11 +66,15 @@ export function HistoryList({ entries }: HistoryListProps) {
                             <div className="grid grid-cols-2 gap-3 text-sm">
                                 <div>
                                     <span className="text-muted-foreground">Predicted:</span>
-                                    <div className="font-semibold text-base mt-1">#{entry.predictedWinner}</div>
+                                    <div className="font-semibold text-base mt-1">
+                                        #{entry.predictedWinner}
+                                    </div>
                                 </div>
                                 <div>
                                     <span className="text-muted-foreground">Actual:</span>
-                                    <div className="font-semibold text-base mt-1">#{entry.actualWinner}</div>
+                                    <div className="font-semibold text-base mt-1">
+                                        #{entry.actualWinner}
+                                    </div>
                                 </div>
                             </div>
 
@@ -72,6 +82,43 @@ export function HistoryList({ entries }: HistoryListProps) {
                                 <span className="text-muted-foreground">Confidence: </span>
                                 <span className="font-medium">{entry.confidence}%</span>
                             </div>
+
+                            {entry.betDetails && (
+                                <div className="p-3 bg-accent/30 rounded-lg">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-1.5">
+                                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-muted-foreground">Bet Result:</span>
+                                        </div>
+                                        <span className={`font-bold ${betResult && betResult > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {betResult && betResult > 0 ? '+' : ''}{betResult ? `$${betResult.toLocaleString()}` : '$0'}
+                                        </span>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                        ${entry.betDetails.betAmount.toLocaleString()} on #{entry.betDetails.betHorseNumber} at {formatOdds(entry.betDetails.oddsUsed)}
+                                    </div>
+                                </div>
+                            )}
+
+                            {entry.firstPlace && entry.secondPlace && entry.thirdPlace && (
+                                <div className="pt-2 border-t border-border">
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+                                        <Trophy className="h-3 w-3" />
+                                        Podium Finish:
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white">
+                                            1st: #{entry.firstPlace}
+                                        </Badge>
+                                        <Badge className="bg-gray-400 hover:bg-gray-500 text-white">
+                                            2nd: #{entry.secondPlace}
+                                        </Badge>
+                                        <Badge className="bg-amber-600 hover:bg-amber-700 text-white">
+                                            3rd: #{entry.thirdPlace}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="pt-2 border-t border-border">
                                 <div className="text-xs text-muted-foreground mb-2">Contenders:</div>

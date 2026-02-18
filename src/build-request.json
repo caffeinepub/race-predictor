@@ -1,105 +1,155 @@
 {
   "kind": "build_request",
-  "title": "Rename app, switch odds to fractional /1 input, and add Android APK instructions",
+  "title": "Add advanced stats tracking, adaptive weighted prediction, and updated bet sizing",
   "projectName": "GTA Online Horse Track Guesser",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-11",
-      "text": "Rename the app everywhere it is user-visible from \"Race Predictor\" to the exact new name: \"GTA Online Horse Track Guesser\" (including the header title text, the app icon alt text, and the HTML document title).",
+      "id": "REQ-31",
+      "text": "Extend the on-device race entry model to support horse-level performance tracking (Win/Place/Show rates and recent form), including storing per-race podium positions and optional podium margin fields so the app can compute last-5 recent form with positions and margins.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Change the app name to \"GTA Online Horse Track Guesser\""
+          "Win %, Place %, Show %: Classic, but you need it updated race by race.\n\nRecent Form: Last 5 races positions and margins.\n\n...Your app should immediately log every horse’s number, finishing order of the top 3, odds, etc."
         ]
       },
       "acceptanceCriteria": [
-        "The header (AppHeader) shows \"GTA Online Horse Track Guesser\" as the app title.",
-        "The app icon image alt text uses \"GTA Online Horse Track Guesser\".",
-        "The browser tab/document title is \"GTA Online Horse Track Guesser\" (frontend/index.html title updated)."
+        "RaceEntry (frontend/src/features/entries/types.ts) includes fields sufficient to compute per-contender Win/Place/Show percentages across saved history.",
+        "RaceEntry supports recording margin values for 1st/2nd/3rd place (podium) as optional numeric fields (or equivalent structure).",
+        "Existing saved entries without margin fields continue to load without runtime errors (margins treated as unknown/blank)."
       ]
     },
     {
-      "id": "REQ-12",
-      "text": "Update the race entry odds input UI to use fractional odds with a fixed denominator of \"/1\": each contender row must have a single numeric input for the numerator only, display a constant \"/1\" immediately next to it (not editable), and show \"-/1\" as the blank state.",
+      "id": "REQ-32",
+      "text": "Update the New Entry flow UI to capture podium margins (for 1st, 2nd, and 3rd) using clear English labels, validate inputs, and save them with the race entry without changing the existing top-3 (podium) outcome workflow.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "I want the odds to be put in as a \"1/1, or 29/1,\" fractional kind of style with \"-/1\" as the blank.",
-          "The odds field should be 1 numeric box for the first number of the odds (before the \"/\"), and the second should be a constant \"/1\" instead of a box."
+          "Every race is an input event. Your app should immediately log every horse’s number, finishing order of the top 3, odds, etc.",
+          "Recent Form: Last 5 races positions and margins."
         ]
       },
       "acceptanceCriteria": [
-        "In the New Entry flow, each contender (1–6) shows a single numeric field for the numerator and a non-editable \"/1\" suffix.",
-        "When the numerator is empty, the UI reads as \"-/1\" (e.g., placeholder '-' in the numerator field with the visible '/1' suffix).",
-        "The app continues to store and use odds as numeric values for prediction/learning (numerator interpreted as X in X/1).",
-        "Validation errors remain in English and still prevent prediction/save when odds are missing or <= 0."
+        "The Race Outcome step includes inputs for 1st/2nd/3rd margin values with English labels (e.g., \"1st place margin\").",
+        "Validation prevents saving if a provided margin is negative or non-numeric (blank margins are allowed).",
+        "Saving a race preserves the existing podium validation rules (distinct 1st/2nd/3rd)."
       ]
     },
     {
-      "id": "REQ-13",
-      "text": "Update all odds displays in the UI to render odds in the same fractional format \"{numerator}/1\" instead of showing a raw number (e.g., in History contender badges).",
+      "id": "REQ-33",
+      "text": "Reintroduce and compute horse-level (contender-number-level) stats on-device from saved history, including Win %, Place %, Show %, and Recent Form (last 5 races) using podium position plus any stored podium margins, and expose these computed stats in the Stats view.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "I want the odds to be put in as a \"1/1, or 29/1,\" fractional kind of style..."
+          "Horse-Level Stats\n\nWin %, Place %, Show %...\n\nRecent Form: Last 5 races positions and margins."
         ]
       },
       "acceptanceCriteria": [
-        "In History, each contender badge renders odds like \"#3 (29/1)\" rather than \"#3 (29)\".",
-        "No part of the UI displays contender odds as a plain decimal/float placeholder example (e.g., remove or update \"Enter odds (e.g., 2.5)\" to a fractional example)."
+        "The learned state computation (frontend/src/storage/localMemoryStore.ts) derives per-contender win/place/show counts and percentages from saved races.",
+        "The Stats tab (frontend/src/features/analytics/StatsAnalyticsView.tsx) displays Win/Place/Show percentages per contender number with clear English labels.",
+        "The Stats tab shows a Recent Form section per contender number listing the last 5 recorded results; if a contender was not in the podium for a race, it is represented as \"Unplaced\" (or similar English label).",
+        "If margins are missing for historical races, the UI indicates margin as unknown/blank without crashing."
       ]
     },
     {
-      "id": "REQ-14",
-      "text": "Add an in-app, English-language help section that explains how to get a usable Android APK from the deployed web app by wrapping the site URL in a WebView using a website-to-APK generator (include the steps and the example site mentioned in the conversation).",
+      "id": "REQ-34",
+      "text": "Enhance the prediction strategy to use weighted scoring with learnable feature weights (“trust factors”), updating the weights after each saved race using a continuous feedback loop that compares implied probabilities vs actual outcomes, while still incorporating market odds as a core signal (ensemble-style combination of multiple signals).",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Also, please tell me how to download this as a usable apk. for android."
+          "Prediction Strategy (Learning Over Time)\n\n1. Weighted Scoring\nGive each stat a weight %.\n...\n3. Confidence Adjustment\nKeep a “trust factor” per feature...\nBayesian update works great here...\n\n4. Ensemble Thinking\n...Use multiple signals: horse stats, market data...\n\n5. Continuous Feedback Loop\nCompare predicted probabilities vs. actual outcomes.\nAdjust internal weights accordingly."
         ]
       },
       "acceptanceCriteria": [
-        "The app UI contains a clearly discoverable \"Android APK\" (or similar) help area that provides step-by-step instructions.",
-        "The instructions mention that this is a web app and describe the approach of using a WebView wrapper, including the example generator URL \"websitetoapk.com\".",
-        "All help text is in English."
+        "Prediction generation (frontend/src/features/learning/model.ts) uses at least two signals combined via weights: (1) market odds signal and (2) learned historical performance signals derived from saved history (e.g., win/place/show rates and/or recent form).",
+        "A learned weight/trust-factor structure is stored on-device (as part of learned state) and is updated after saving races based on prediction vs outcome (probability calibration feedback).",
+        "The model outputs per-contender implied probabilities (still stored on RaceEntry.impliedProbabilities) and a strategyId that reflects the enhanced strategy (not the old hardcoded id).",
+        "User-facing labels/descriptions in the UI remain in English and do not claim guaranteed improvement."
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "text": "Add streak/slump and variance/consistency signals based on saved history and (where available) recorded margins, and incorporate these signals into (a) confidence calculation and (b) Stats view summaries using clear English labels.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Race Context Features\n\nStreak Tracking: Note when specific horse odds are on a winning streak or slump.\n\nAdvanced Prediction Enhancers\n\nVariance Awareness: Track expected vs. actual finish gaps. Horses that perform erratically should get a lower confidence rating."
+        ]
+      },
+      "acceptanceCriteria": [
+        "The learned on-device stats include a streak/slump indicator per contender number based on recent outcomes (e.g., consecutive podium appearances or wins).",
+        "If podium margins are available, the learned on-device stats include a simple variance/consistency measure derived from recent margins; if margins are not available, the app gracefully degrades (variance shown as unavailable).",
+        "Prediction confidence is adjusted downward when variance/erratic performance is high (when the variance signal is available).",
+        "Stats view displays streak/slump and variance/consistency signals using English labels and without requiring any backend services."
+      ]
+    },
+    {
+      "id": "REQ-36",
+      "text": "Update bet sizing guidance to support a minimum bet of 100 and a maximum bet of 10,000, and update the New Entry flow bet amount UI and validation to match these new constraints using English labels.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Bet Sizing Guidance... 100 minimum, 10,000 maximum bet."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Bet sizing calculation (frontend/src/lib/betSizing.ts) enforces min=100 and max=10,000.",
+        "EntryFlow bet recording validation accepts bet amounts from 100 to 10,000 inclusive.",
+        "The Bet Amount selector UI in EntryFlow offers values that include 100 and reach 10,000 (spacing/increments can be updated as needed), and the label text reflects the new range in English."
+      ]
+    },
+    {
+      "id": "REQ-37",
+      "text": "Update on-device storage schema/version handling so new learned-state fields (horse-level stats, streak/variance signals, and feature weights/trust factors) can be added without breaking existing users’ saved data, and recomputation continues to work after upgrades.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Each race feeds delta changes into itself instead of overwriting old data—this lets the model spot trends and sudden improvements faster."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Existing localStorage entries created before this change still load successfully after the update (no forced data wipe solely due to new fields).",
+        "New learned-state fields default safely when absent and are recomputed from history when possible.",
+        "Recompute learned state (triggered after saving a race) updates the new signals/weights consistently across sessions (survives reload)."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any files under frontend/src/components/ui (compose existing UI components instead).",
-    "Do not edit any paths listed in SYSTEM_CONTEXT.frontend.immutablePaths.",
-    "Backend must remain single-actor Motoko; no additional backend services or databases."
+    "Use English for all user-facing text.",
+    "Do not modify files under frontend/src/components/ui (compose existing components instead).",
+    "Do not edit any frontend immutable paths listed in SYSTEM_CONTEXT.",
+    "Keep data persisted on-device using localStorage (no external databases or services).",
+    "Backend remains a single Motoko actor; do not introduce additional backend services for these features."
   ],
   "nonGoals": [
-    "Generating or signing an actual Android APK inside this project.",
-    "Adding native Android/React Native/Expo code.",
-    "Implementing external authentication methods beyond Internet Identity."
+    "Implementing real-time updates or WebSocket-based live data feeds.",
+    "Integrating external machine learning services or third-party analytics platforms.",
+    "Adding horse names back into the app (contenders remain identified by number unless separately requested).",
+    "Building an Android APK generator or distribution pipeline (only in-app functionality changes are in scope)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

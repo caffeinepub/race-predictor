@@ -1,39 +1,85 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T10:11:19.604Z",
-  "summary": "Most requested changes appear implemented: app rename (header alt/title + HTML title), odds formatting utilities and History formatting, and a new in-app Android APK help tab with WebView-wrapper instructions referencing websitetoapk.com. One specific acceptance criterion for the New Entry odds input blank state (showing “-/1”) cannot be confirmed from the provided diff summary due to truncation.",
+  "generatedAt": "2026-02-18T12:12:10.267Z",
+  "summary": "The diff clearly adds optional podium margin fields to RaceEntry, margin validation logic, a new bet sizing range in the bet sizing helper, a more complex multi-signal prediction score using stored weights, and storage defaults/merging to tolerate missing fields. However, several UI-facing acceptance criteria cannot be confirmed from the truncated UI diffs (margins inputs/labels, bet amount selector range options, and Stats view contender-level Win/Place/Show + recent form + streak/variance display). Weight/trust-factor updating after each race is also not verifiable from the truncated learned-state compute logic.",
   "missing_requirements": [
     {
-      "id": "REQ-12",
-      "requirement": "When the numerator is empty, the UI reads as \"-/1\" (e.g., placeholder '-' in the numerator field with the visible '/1' suffix).",
-      "reason": "A formatter for the placeholder (\"-/1\") was added, but the EntryFlow UI portion that would show the placeholder/suffix next to the input is truncated; there is no explicit evidence in the visible diff that the numerator input uses placeholder '-' while showing a fixed '/1' suffix in the New Entry rows.",
+      "id": "REQ-32",
+      "requirement": "Update the New Entry flow UI to capture podium margins (for 1st, 2nd, and 3rd) using clear English labels, validate inputs, and save them with the race entry without changing the existing top-3 outcome workflow.",
+      "reason": "Margin state + validation exist, but the diff snippet does not show the Race Outcome step UI inputs/labels for the margin fields, nor does it show the save-path wiring those margins into the persisted RaceEntry (the EntryFlow.tsx content is truncated during handleSave).",
       "evidence": [
-        "frontend/src/lib/oddsFormat.ts",
+        "frontend/src/features/entries/EntryFlow.tsx (truncated)",
+        "frontend/src/features/entries/validation.ts"
+      ]
+    },
+    {
+      "id": "REQ-33",
+      "requirement": "Reintroduce and compute contender-number-level stats (Win %, Place %, Show %, Recent Form last-5 with margins/unknown handling) from saved history and expose them in the Stats view.",
+      "reason": "While local learned-state types include contenderStats with recentForm and optional margin, the provided StatsAnalyticsView.tsx diff snippet shows betting performance metrics (accuracy/ROI/calibration) but does not show per-contender Win/Place/Show %, Recent Form list, or margin unknown/blank rendering.",
+      "evidence": [
+        "frontend/src/features/analytics/StatsAnalyticsView.tsx (truncated)",
+        "frontend/src/storage/localMemoryStore.ts (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-34",
+      "requirement": "Enhance prediction with weighted scoring using learnable feature weights (“trust factors”) stored on-device and updated after each saved race based on prediction vs outcome, while still using market odds as a core signal; output implied probabilities and a new strategyId.",
+      "reason": "The model uses multiple weighted signals (odds + learned signals) and returns impliedProbabilities + a new strategyId, but the diff does not show any logic that updates/learns the signalWeights after each saved race (the learned-state computation/update function(s) are truncated and not evidenced).",
+      "evidence": [
+        "frontend/src/features/learning/model.ts (truncated)",
+        "frontend/src/storage/localMemoryStore.ts (truncated)",
+        "frontend/src/storage/useOnDeviceMemory.ts"
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "requirement": "Add streak/slump and variance/consistency signals and incorporate them into confidence calculation and Stats view summaries with clear English labels.",
+      "reason": "Confidence adjustment based on variance is present in the prediction model, and learned-state types include streakData/varianceData, but the Stats view changes shown do not evidence any display of streak/slump or variance/consistency with English labels.",
+      "evidence": [
+        "frontend/src/features/learning/model.ts (truncated)",
+        "frontend/src/features/analytics/StatsAnalyticsView.tsx (truncated)",
+        "frontend/src/storage/localMemoryStore.ts (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-36",
+      "requirement": "Update bet sizing guidance and New Entry bet amount UI/validation to enforce min bet 100 and max bet 10,000, including UI selector offering values that include 100 and reach 10,000 with English label text reflecting the new range.",
+      "reason": "The bet sizing helper enforces 100–10,000 and EntryFlow shows a validation check for 100–10,000, but the diff snippet does not show the bet amount selector options/label text ensuring the UI offers values including 100 up to 10,000.",
+      "evidence": [
+        "frontend/src/lib/betSizing.ts",
         "frontend/src/features/entries/EntryFlow.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Confidence emoji indicators for prediction confidence (😰/😕/😐/🙂/😄).",
-      "reason": "Not requested by any requirement; appears to be newly introduced in EntryFlow per the diff content and file summary.",
+      "description": "User-facing confidence emojis in the EntryFlow UI logic.",
+      "reason": "Not requested in the BuildRequest, and may conflict with the constraint to use English for all user-facing text.",
       "evidence": [
-        "frontend/src/features/entries/EntryFlow.tsx (truncated)",
-        "frontend-file-summaries.txt (EntryFlow description mentions \"emoji indicators\")"
+        "frontend/src/features/entries/EntryFlow.tsx (truncated)"
+      ]
+    },
+    {
+      "description": "Stats view adds a 'Calibration Score' section (1 - Brier score) and other expanded betting-performance UI sections beyond contender Win/Place/Show and recent form.",
+      "reason": "REQ-33/REQ-35 focus on contender-level stats and signals; this additional Stats UI is not requested (though it may be acceptable as an extra).",
+      "evidence": [
+        "frontend/src/features/analytics/StatsAnalyticsView.tsx (truncated)"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.6,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/index.html",
-    "frontend/src/App.tsx",
-    "frontend/src/components/AppHeader.tsx",
+    "frontend/src/features/analytics/StatsAnalyticsView.tsx",
     "frontend/src/features/entries/EntryFlow.tsx",
-    "frontend/src/features/help/AndroidApkHelp.tsx",
-    "frontend/src/features/history/HistoryList.tsx",
-    "frontend/src/lib/oddsFormat.ts",
+    "frontend/src/features/entries/types.ts",
+    "frontend/src/features/entries/validation.ts",
+    "frontend/src/features/learning/model.ts",
+    "frontend/src/lib/betSizing.ts",
+    "frontend/src/storage/localMemoryStore.ts",
+    "frontend/src/storage/storageKeys.ts",
+    "frontend/src/storage/useOnDeviceMemory.ts",
     "project_state.json"
   ]
 }

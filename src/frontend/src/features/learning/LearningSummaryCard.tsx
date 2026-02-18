@@ -1,9 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { TrendingUp, Target, Award } from 'lucide-react';
+import { TrendingUp, Target, Award, DollarSign, Activity } from 'lucide-react';
 import { type RaceEntry } from '@/features/entries/types';
 import { type LearnedState } from '@/storage/localMemoryStore';
 import { calculateMetrics } from './metrics';
+import { getAccuracyVisuals } from './accuracyVisuals';
 
 interface LearningSummaryCardProps {
     entries: RaceEntry[];
@@ -11,7 +12,7 @@ interface LearningSummaryCardProps {
 }
 
 export function LearningSummaryCard({ entries, learnedState }: LearningSummaryCardProps) {
-    const metrics = calculateMetrics(entries);
+    const metrics = calculateMetrics(entries, learnedState.totalBetAmount, learnedState.totalPayout);
 
     if (metrics.totalRaces === 0) {
         return (
@@ -21,7 +22,9 @@ export function LearningSummaryCard({ entries, learnedState }: LearningSummaryCa
                         <TrendingUp className="h-5 w-5" />
                         Learning Status
                     </CardTitle>
-                    <CardDescription>The AI will improve as you add more race data</CardDescription>
+                    <CardDescription>
+                        The predictor learns from saved race results and improves over time
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-muted-foreground">
@@ -33,6 +36,8 @@ export function LearningSummaryCard({ entries, learnedState }: LearningSummaryCa
         );
     }
 
+    const accuracyVisuals = getAccuracyVisuals(metrics.accuracy);
+
     return (
         <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
             <CardHeader>
@@ -41,7 +46,8 @@ export function LearningSummaryCard({ entries, learnedState }: LearningSummaryCa
                     Learning Status
                 </CardTitle>
                 <CardDescription>
-                    Trained on {metrics.totalRaces} race{metrics.totalRaces !== 1 ? 's' : ''}
+                    Trained on {metrics.totalRaces} race{metrics.totalRaces !== 1 ? 's' : ''} • Model adapts from
+                    recorded outcomes
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -51,9 +57,22 @@ export function LearningSummaryCard({ entries, learnedState }: LearningSummaryCa
                             <Target className="h-4 w-4 text-muted-foreground" />
                             <span className="text-muted-foreground">Overall Accuracy</span>
                         </div>
-                        <span className="font-bold text-lg">{metrics.accuracy}%</span>
+                        <span className="font-bold text-lg flex items-center gap-1.5">
+                            <span className="text-xl" role="img" aria-label="accuracy indicator">
+                                {accuracyVisuals.emoji}
+                            </span>
+                            {metrics.accuracy}%
+                        </span>
                     </div>
-                    <Progress value={metrics.accuracy} className="h-2" />
+                    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                        <div
+                            className="h-full transition-all duration-500 ease-out"
+                            style={{
+                                width: `${metrics.accuracy}%`,
+                                backgroundColor: accuracyVisuals.color
+                            }}
+                        />
+                    </div>
                 </div>
 
                 {metrics.totalRaces >= 10 && (
@@ -66,6 +85,38 @@ export function LearningSummaryCard({ entries, learnedState }: LearningSummaryCa
                             <span className="font-bold text-lg">{metrics.recentAccuracy}%</span>
                         </div>
                         <Progress value={metrics.recentAccuracy} className="h-2" />
+                    </div>
+                )}
+
+                {metrics.totalBetAmount > 0 && (
+                    <div className="space-y-2 pt-2 border-t border-border/50">
+                        <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-muted-foreground">Overall ROI</span>
+                            </div>
+                            <span className={`font-bold text-lg ${metrics.overallROI >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {metrics.overallROI >= 0 ? '+' : ''}{metrics.overallROI}%
+                            </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            ${metrics.totalPayout.toLocaleString()} returned on ${metrics.totalBetAmount.toLocaleString()} wagered
+                        </div>
+                    </div>
+                )}
+
+                {metrics.brierScore > 0 && (
+                    <div className="space-y-2 pt-2 border-t border-border/50">
+                        <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                                <Activity className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-muted-foreground">Calibration Score</span>
+                            </div>
+                            <span className="font-bold text-lg">{(1 - metrics.brierScore).toFixed(2)}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            Higher is better (probability accuracy)
+                        </div>
                     </div>
                 )}
 

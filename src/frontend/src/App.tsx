@@ -5,8 +5,8 @@ import { SkipToContent } from '@/components/SkipToContent';
 import { EntryFlow } from '@/features/entries/EntryFlow';
 import { HistoryList } from '@/features/history/HistoryList';
 import { LearningSummaryCard } from '@/features/learning/LearningSummaryCard';
+import { StatsAnalyticsView } from '@/features/analytics/StatsAnalyticsView';
 import { ResetAppMemoryButton } from '@/features/reset/ResetAppMemoryButton';
-import { AndroidApkHelp } from '@/features/help/AndroidApkHelp';
 import { useOnDeviceMemory } from '@/storage/useOnDeviceMemory';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -22,14 +22,14 @@ export default function App() {
                     <MobilePageContainer>
                         <Tabs defaultValue="predict" className="w-full">
                             <TabsList className="grid w-full grid-cols-3 mb-6">
-                                <TabsTrigger value="predict" className="text-base">
+                                <TabsTrigger value="predict" className="text-sm">
                                     New Entry
                                 </TabsTrigger>
-                                <TabsTrigger value="history" className="text-base">
-                                    History
+                                <TabsTrigger value="stats" className="text-sm">
+                                    Stats
                                 </TabsTrigger>
-                                <TabsTrigger value="apk" className="text-base">
-                                    Android APK
+                                <TabsTrigger value="history" className="text-sm">
+                                    History
                                 </TabsTrigger>
                             </TabsList>
 
@@ -44,16 +44,16 @@ export default function App() {
                                 />
                             </TabsContent>
 
+                            <TabsContent value="stats" className="space-y-6">
+                                <StatsAnalyticsView entries={entries} learnedState={learnedState} />
+                            </TabsContent>
+
                             <TabsContent value="history" className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <h2 className="text-2xl font-bold text-foreground">Race History</h2>
                                     <ResetAppMemoryButton onReset={clearAll} />
                                 </div>
                                 <HistoryList entries={entries} />
-                            </TabsContent>
-
-                            <TabsContent value="apk" className="space-y-6">
-                                <AndroidApkHelp />
                             </TabsContent>
                         </Tabs>
                     </MobilePageContainer>

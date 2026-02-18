@@ -1,14 +1,23 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 7,
-  "summary": "Build an Android-usable React Native app for horse-race predictions that learns from user-provided race results over time using on-device persistent storage, includes stats/history, and provides a reset option to clear learned memory.",
+  "projectStateVersion": 21,
+  "summary": "Shift the horse-race prediction app away from per-horse dynamic profiles and detailed per-horse stat tracking; simplify saved race outcomes to only record 1st/2nd/3rd finish order, and remove horse names if they are not used by the prediction logic.",
   "architectural_notes": [
     "Use on-device persistent storage (e.g., AsyncStorage) for races/history and learned parameters.",
     "Prediction algorithm should incorporate historical user-entered outcomes to adapt over time (simple incremental model acceptable).",
     "Provide a one-tap reset that clears all persisted keys related to races/model state.",
-    "Odds should be stored/handled as fractional odds with fixed denominator 1; UI shows \"-/1\" placeholder when numerator is blank."
+    "Odds should be stored/handled as fractional odds with fixed denominator 1; UI shows \"-/1\" placeholder when numerator is blank.",
+    "Finished product should not include an in-app download/APK instructions page/help section.",
+    "Track model calibration by comparing predicted probabilities vs outcomes; use this to adjust feature weights/trust factors over time (Bayesian-style updates acceptable).",
+    "Bet sizing guidance should derive from predicted probability vs odds and enforce: 1,000 minimum, 10,000 maximum, step size 1,000.",
+    "Remove/disable per-horse dynamic profiles and horse-level stat aggregation; do not maintain incremental per-horse histories.",
+    "Simplify race outcome logging to store only the top-3 finish order (1st/2nd/3rd).",
+    "Remove horse names from the saved race model and UI if they are not used by prediction."
   ],
-  "known_issues": [],
+  "known_issues": [
+    "Potential scope conflict: current project direction removes per-horse profiles/stats and margins, but latest requirements request per-horse stats (W/P/S, last-5, margins) and variance metrics based on finish gaps.",
+    "Bet sizing constraints conflict: existing rule enforces 1,000 minimum with 1,000 step size, but latest requirement requests 100 minimum."
+  ],
   "isFixRequest": false,
   "existing_features": [
     {
@@ -122,6 +131,190 @@
         "REQ-14"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-remove-the-in-app-android-apk-download-instructions-page-from-the-finished-product-by-eliminating-its-navigation-entry-and-preventing-the-help-content-from-being-reachable-in-the-ui",
+      "title": "Remove the in-app Android APK (download instructions) page from the finished product by eliminating its navigation entry and preventing the help content from being reachable in the UI.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-overall-accuracy-meter-in-the-learning-status-card-to-visually-communicate-accuracy-using-a-red-green-color-transition-based-on-the-percentage-value-and-add-an-emoji-indicator-that-reflects-the-meter-s-attitude-worse-at-low-accuracy-better-at-high-accuracy",
+      "title": "Update the \"Overall Accuracy\" meter in the Learning Status card to visually communicate accuracy using a red→green color transition based on the percentage value, and add an emoji indicator that reflects the meter’s \"attitude\" (worse at low accuracy, better at high accuracy).",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-clarify-in-the-learning-status-ui-copy-that-predictions-are-intended-to-improve-as-more-race-outcomes-are-recorded-learning-from-saved-history-without-claiming-guaranteed-improvement-for-every-individual-user-dataset",
+      "title": "Clarify in the Learning Status UI copy that predictions are intended to improve as more race outcomes are recorded (learning from saved history), without claiming guaranteed improvement for every individual user/dataset.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-deploy-publish-the-current-application-so-it-is-live-and-accessible-to-users-as-a-hosted-internet-computer-web-app-ensuring-both-the-frontend-assets-and-the-backend-canister-even-if-it-has-no-business-logic-compile-and-deploy-successfully",
+      "title": "Deploy/publish the current application so it is live and accessible to users as a hosted Internet Computer web app, ensuring both the frontend assets and the backend canister (even if it has no business logic) compile and deploy successfully.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-on-device-race-entry-data-model-so-each-saved-race-logs-per-horse-identity-and-outcome-details-at-minimum-horse-name-horse-number-odds-finishing-position-order-and-margin-and-capture-these-fields-in-the-new-entry-flow-before-saving",
+      "title": "Extend the on-device race entry data model so each saved race logs per-horse identity and outcome details (at minimum: horse name, horse number, odds, finishing position/order, and margin), and capture these fields in the New Entry flow before saving.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-maintain-an-on-device-per-horse-dynamic-profile-that-updates-incrementally-after-each-saved-race-do-not-overwrite-history-and-compute-horse-level-stats-including-win-place-show-recent-form-last-5-finishes-with-margins-streak-slump-indicators-and-variance-consistency-signals-based-on-finish-gaps",
+      "title": "Maintain an on-device, per-horse dynamic profile that updates incrementally after each saved race (do not overwrite history), and compute horse-level stats including Win %, Place %, Show %, recent form (last 5 finishes with margins), streak/slump indicators, and variance/consistency signals based on finish gaps.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-betting-performance-tracking-on-device-including-overall-prediction-accuracy-roi-on-recorded-bets-per-strategy-roi-breakdown-and-confidence-probability-calibration-metrics-comparing-predicted-probabilities-vs-actual-outcomes-over-time",
+      "title": "Add betting performance tracking on-device, including overall prediction accuracy, ROI on recorded bets, per-strategy ROI breakdown, and confidence/probability calibration metrics comparing predicted probabilities vs. actual outcomes over time.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enhance-the-prediction-learning-algorithm-to-support-weighted-scoring-with-learnable-feature-weights-trust-factors-update-those-weights-after-each-race-using-a-continuous-feedback-loop-bayesian-style-or-similar-incremental-update-and-output-per-horse-implied-probabilities-used-for-both-confidence-and-bet-sizing-include-an-ensemble-style-combination-of-at-least-market-odds-and-learned-horse-profile-signals",
+      "title": "Enhance the prediction/learning algorithm to support weighted scoring with learnable feature weights (“trust factors”), update those weights after each race using a continuous feedback loop (Bayesian-style or similar incremental update), and output per-horse implied probabilities used for both confidence and bet sizing; include an ensemble-style combination of at least market odds and learned horse-profile signals.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-bet-sizing-guidance-based-on-predicted-probability-vs-odds-constrained-to-a-minimum-bet-of-1-000-maximum-bet-of-10-000-in-increments-of-1-000-and-present-the-suggested-wager-amount-alongside-the-prediction-output",
+      "title": "Add bet sizing guidance based on predicted probability vs. odds, constrained to a minimum bet of 1,000, maximum bet of 10,000, in increments of 1,000, and present the suggested wager amount alongside the prediction output.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-new-in-app-stats-analytics-view-accessible-via-the-existing-tab-navigation-that-surfaces-a-horse-level-profiles-and-recent-form-and-b-betting-performance-metrics-including-roi-and-calibration-summaries-using-clear-english-labels-optimized-for-mobile-screens",
+      "title": "Add a new in-app Stats/Analytics view (accessible via the existing tab navigation) that surfaces (a) horse-level profiles and recent form, and (b) betting performance metrics including ROI and calibration summaries, using clear English labels optimized for mobile screens.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-the-per-horse-dynamic-profile-feature-from-on-device-learned-state-analytics-ui-and-prediction-logic-so-the-app-no-longer-maintains-or-displays-horse-profiles-or-any-per-horse-recent-form-variance-streak-stats",
+      "title": "Remove the per-horse dynamic profile feature from on-device learned state, analytics UI, and prediction logic so the app no longer maintains or displays “horse profiles” or any per-horse recent-form/variance/streak stats.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-change-race-outcome-recording-to-only-capture-the-1st-place-2nd-place-and-3rd-place-finish-order-podium-and-stop-collecting-storing-finish-positions-for-4th-6th-and-stop-collecting-storing-margin-fields",
+      "title": "Change race outcome recording to only capture the 1st-place, 2nd-place, and 3rd-place finish order (podium), and stop collecting/storing finish positions for 4th–6th and stop collecting/storing margin fields.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-if-horse-names-are-not-used-by-the-prediction-logic-remove-horse-name-input-storage-and-display-across-the-app-so-entries-are-identified-only-by-contender-number-and-odds",
+      "title": "If horse names are not used by the prediction logic, remove horse name input, storage, and display across the app so entries are identified only by contender number and odds.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-on-device-storage-schema-versioning-to-handle-the-removal-of-horse-profiles-horse-names-finish-positions-and-margins-without-breaking-the-app-for-existing-users",
+      "title": "Update on-device storage schema/versioning to handle the removal of horse profiles, horse names, finish positions, and margins without breaking the app for existing users.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-history-and-stats-calculations-and-ui-text-to-reflect-the-simplified-top-3-logging-model-podium-while-preserving-existing-betting-performance-metrics-roi-and-calibration-where-applicable",
+      "title": "Update History and Stats calculations and UI text to reflect the simplified top-3 logging model (podium) while preserving existing betting performance metrics, ROI, and calibration where applicable.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-odds-fraction-numerator-entry-ui-in-the-new-entry-flow-so-each-contender-row-uses-a-compact-smaller-numeric-input-that-visually-looks-like-a-small-0-box-with-a-non-editable-1-displayed-immediately-to-its-right-to-represent-the-fractional-format",
+      "title": "Update the odds (fraction) numerator entry UI in the New Entry flow so each contender row uses a compact, smaller numeric input that visually looks like a small \"0\" box, with a non-editable \"(/1)\" displayed immediately to its right to represent the fractional format.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-on-device-race-entry-model-to-support-horse-level-performance-tracking-win-place-show-rates-and-recent-form-including-storing-per-race-podium-positions-and-optional-podium-margin-fields-so-the-app-can-compute-last-5-recent-form-with-positions-and-margins",
+      "title": "Extend the on-device race entry model to support horse-level performance tracking (Win/Place/Show rates and recent form), including storing per-race podium positions and optional podium margin fields so the app can compute last-5 recent form with positions and margins.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-new-entry-flow-ui-to-capture-podium-margins-for-1st-2nd-and-3rd-using-clear-english-labels-validate-inputs-and-save-them-with-the-race-entry-without-changing-the-existing-top-3-podium-outcome-workflow",
+      "title": "Update the New Entry flow UI to capture podium margins (for 1st, 2nd, and 3rd) using clear English labels, validate inputs, and save them with the race entry without changing the existing top-3 (podium) outcome workflow.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-reintroduce-and-compute-horse-level-contender-number-level-stats-on-device-from-saved-history-including-win-place-show-and-recent-form-last-5-races-using-podium-position-plus-any-stored-podium-margins-and-expose-these-computed-stats-in-the-stats-view",
+      "title": "Reintroduce and compute horse-level (contender-number-level) stats on-device from saved history, including Win %, Place %, Show %, and Recent Form (last 5 races) using podium position plus any stored podium margins, and expose these computed stats in the Stats view.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enhance-the-prediction-strategy-to-use-weighted-scoring-with-learnable-feature-weights-trust-factors-updating-the-weights-after-each-saved-race-using-a-continuous-feedback-loop-that-compares-implied-probabilities-vs-actual-outcomes-while-still-incorporating-market-odds-as-a-core-signal-ensemble-style-combination-of-multiple-signals",
+      "title": "Enhance the prediction strategy to use weighted scoring with learnable feature weights (“trust factors”), updating the weights after each saved race using a continuous feedback loop that compares implied probabilities vs actual outcomes, while still incorporating market odds as a core signal (ensemble-style combination of multiple signals).",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-streak-slump-and-variance-consistency-signals-based-on-saved-history-and-where-available-recorded-margins-and-incorporate-these-signals-into-a-confidence-calculation-and-b-stats-view-summaries-using-clear-english-labels",
+      "title": "Add streak/slump and variance/consistency signals based on saved history and (where available) recorded margins, and incorporate these signals into (a) confidence calculation and (b) Stats view summaries using clear English labels.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-bet-sizing-guidance-to-support-a-minimum-bet-of-100-and-a-maximum-bet-of-10-000-and-update-the-new-entry-flow-bet-amount-ui-and-validation-to-match-these-new-constraints-using-english-labels",
+      "title": "Update bet sizing guidance to support a minimum bet of 100 and a maximum bet of 10,000, and update the New Entry flow bet amount UI and validation to match these new constraints using English labels.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-on-device-storage-schema-version-handling-so-new-learned-state-fields-horse-level-stats-streak-variance-signals-and-feature-weights-trust-factors-can-be-added-without-breaking-existing-users-saved-data-and-recomputation-continues-to-work-after-upgrades",
+      "title": "Update on-device storage schema/version handling so new learned-state fields (horse-level stats, streak/variance signals, and feature weights/trust factors) can be added without breaking existing users’ saved data, and recomputation continues to work after upgrades.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -172,8 +365,69 @@
       "summary": "Change odds input to fractional style with one numeric input for the numerator and a constant \"/1\" denominator (show \"-/1\" when blank)",
       "reqIds": [],
       "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Remove/omit the in-app download/APK instructions page from the finished product",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Update the \"Overall accuracy\" meter UI to be red when low and transition to green as the percentage increases, and add emojis indicating its attitude",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Deploy/publish the app so it is live/accessible to users",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Add betting performance tracking/analytics (prediction accuracy, ROI on bets/strategies, confidence vs outcome analysis for calibration)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Enhance learning/prediction strategy to support weighted scoring + continuous feedback (trust factor per feature, Bayesian-style weight updates, optional ensemble of signals)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Add bet sizing guidance using predicted probability vs odds with constraints (min 1,000; max 10,000; increments of 1,000)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Adjust odds (fractional) input UI styling: use a smaller \"0\"-style entry box with a constant \"/1\" next to it to represent the fraction",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Add horse-level stats tracking (Win/Place/Show %, recent form last 5 with positions and margins) updated race-by-race",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Add additional learning signals: streak/slump tracking, variance/consistency awareness (expected vs actual finish gaps), and per-horse/odds confidence curves",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Change bet sizing guidance constraints to allow a 100 minimum bet (keep 10,000 maximum)",
+      "reqIds": [],
+      "status": "pending"
     }
   ],
+  "gameProjectType": "none",
   "projectName": "Race Predictor",
   "clarification_mode": "instant",
   "clarification_rounds": 0

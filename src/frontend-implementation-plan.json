@@ -1,94 +1,170 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "GTA Online Horse Track Guesser – rename, fractional odds UI, and Android APK help",
+  "title": "Advanced stats tracking, adaptive weighted prediction, and updated bet sizing (frontend-only)",
   "requirements": [
     {
-      "id": "REQ-11",
-      "summary": "Rename all user-visible app name occurrences to \"GTA Online Horse Track Guesser\" (header title, icon alt text, and document title).",
+      "id": "REQ-31",
+      "summary": "Extend RaceEntry to persist podium positions plus optional podium margins to enable horse-level Win/Place/Show and last-5 recent form computations from on-device history.",
       "acceptanceCriteria": [
-        "The header (AppHeader) shows \"GTA Online Horse Track Guesser\" as the app title.",
-        "The app icon image alt text uses \"GTA Online Horse Track Guesser\".",
-        "The browser tab/document title is \"GTA Online Horse Track Guesser\" (frontend/index.html title updated)."
+        "RaceEntry (frontend/src/features/entries/types.ts) includes fields sufficient to compute per-contender Win/Place/Show percentages across saved history.",
+        "RaceEntry supports recording margin values for 1st/2nd/3rd place (podium) as optional numeric fields (or equivalent structure).",
+        "Existing saved entries without margin fields continue to load without runtime errors (margins treated as unknown/blank)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/AppHeader.tsx",
+          "path": "frontend/src/features/entries/types.ts",
           "operation": "modify",
-          "description": "Update the header title text and app icon alt text from \"Race Predictor\" to the exact new name \"GTA Online Horse Track Guesser\"."
+          "description": "Extend RaceEntry with optional persisted podium margin fields (e.g., firstPlaceMargin/secondPlaceMargin/thirdPlaceMargin) and any additional horse-level tracking fields needed for downstream learned-state computations; ensure fields are optional for backward compatibility."
         },
         {
-          "path": "frontend/index.html",
+          "path": "frontend/src/storage/localMemoryStore.ts",
           "operation": "modify",
-          "description": "Update the HTML document <title> text to \"GTA Online Horse Track Guesser\" so the browser tab title matches the new app name."
+          "description": "Harden parsing/loading paths so historical RaceEntry objects lacking new optional margin fields still load and compute safely (treat as unknown/blank) without runtime errors."
         }
       ]
     },
     {
-      "id": "REQ-12",
-      "summary": "Change the New Entry odds input to fractional numerator-only input with a fixed, non-editable \"/1\" suffix and a blank \"-/1\" visual state, while keeping stored odds numeric and validation intact.",
+      "id": "REQ-32",
+      "summary": "Update the New Entry flow Race Outcome step to capture optional podium margins with clear English labels and validation while preserving existing podium selection workflow.",
       "acceptanceCriteria": [
-        "In the New Entry flow, each contender (1–6) shows a single numeric field for the numerator and a non-editable \"/1\" suffix.",
-        "When the numerator is empty, the UI reads as \"-/1\" (e.g., placeholder '-' in the numerator field with the visible '/1' suffix).",
-        "The app continues to store and use odds as numeric values for prediction/learning (numerator interpreted as X in X/1).",
-        "Validation errors remain in English and still prevent prediction/save when odds are missing or <= 0."
+        "The Race Outcome step includes inputs for 1st/2nd/3rd margin values with English labels (e.g., \"1st place margin\").",
+        "Validation prevents saving if a provided margin is negative or non-numeric (blank margins are allowed).",
+        "Saving a race preserves the existing podium validation rules (distinct 1st/2nd/3rd)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/features/entries/EntryFlow.tsx",
           "operation": "modify",
-          "description": "Update the contenders odds input row UI to: (1) accept a single numeric numerator only (use integer-friendly settings such as step=1), (2) render a constant, non-editable \"/1\" suffix immediately next to the input, (3) show a blank \"-/1\" state by using '-' as the input placeholder while keeping the visible '/1' suffix, and (4) continue storing odds as a numeric value used by prediction/learning (numerator interpreted as X in X/1). Ensure existing validation behavior is preserved (missing/<=0 blocks predict/save with English errors)."
+          "description": "Add three optional margin inputs to the Race Outcome step (English labels for 1st/2nd/3rd place margin), wire them into component state, include them in the saved RaceEntry, and keep existing podium selection UX intact. Use existing shadcn-ui building blocks already in use (e.g., Label/Input/Card); verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/features/entries/validation.ts",
           "operation": "modify",
-          "description": "Review and adjust contender-odds validation messaging/logic as needed to ensure it still correctly treats empty numerator as missing (odds 0) and blocks predict/save when odds are missing or <= 0, with English-language error strings."
+          "description": "Extend validation to include podium margin validation: allow blanks, but if provided must be numeric and >= 0; ensure existing podium distinctness rules remain unchanged and still enforced."
         }
       ]
     },
     {
-      "id": "REQ-13",
-      "summary": "Render all displayed odds in the UI as fractional \"{numerator}/1\" instead of raw numbers and update any fractional examples/placeholders accordingly.",
+      "id": "REQ-33",
+      "summary": "Compute and display horse-level Win/Place/Show and last-5 Recent Form (with margins when available) derived from saved history in the Stats view.",
       "acceptanceCriteria": [
-        "In History, each contender badge renders odds like \"#3 (29/1)\" rather than \"#3 (29)\".",
-        "No part of the UI displays contender odds as a plain decimal/float placeholder example (e.g., remove or update \"Enter odds (e.g., 2.5)\" to a fractional example)."
+        "The learned state computation (frontend/src/storage/localMemoryStore.ts) derives per-contender win/place/show counts and percentages from saved races.",
+        "The Stats tab (frontend/src/features/analytics/StatsAnalyticsView.tsx) displays Win/Place/Show percentages per contender number with clear English labels.",
+        "The Stats tab shows a Recent Form section per contender number listing the last 5 recorded results; if a contender was not in the podium for a race, it is represented as \"Unplaced\" (or similar English label).",
+        "If margins are missing for historical races, the UI indicates margin as unknown/blank without crashing."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/oddsFormat.ts",
-          "operation": "create",
-          "description": "Add a small shared formatter utility for odds display (e.g., convert a numeric odds value into a fractional string like \"{numerator}/1\"), to keep formatting consistent across Entry and History UIs."
+          "path": "frontend/src/storage/localMemoryStore.ts",
+          "operation": "modify",
+          "description": "Reintroduce/extend learned-state recomputation to derive per-contender aggregates including win/place/show counts + percentages and a last-5 recent-form list based on podium positions; include margin values when present and treat absent margins as unknown."
         },
         {
-          "path": "frontend/src/features/history/HistoryList.tsx",
+          "path": "frontend/src/features/analytics/StatsAnalyticsView.tsx",
           "operation": "modify",
-          "description": "Update contender badge rendering to display odds in fractional format \"{numerator}/1\" (e.g., \"#3 (29/1)\") using the shared odds formatting utility instead of showing the raw numeric odds value."
+          "description": "Extend the Stats UI to show per-contender Win %, Place %, Show % with clear English labels and add a per-contender Recent Form (last 5) section that lists position results and margin when available (otherwise show blank/unknown) and renders non-podium races as \"Unplaced\". Use existing shadcn-ui components already referenced by the project; verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-34",
+      "summary": "Enhance prediction strategy to a weighted ensemble with learnable per-signal trust factors stored on-device and updated after each saved race using probability calibration feedback.",
+      "acceptanceCriteria": [
+        "Prediction generation (frontend/src/features/learning/model.ts) uses at least two signals combined via weights: (1) market odds signal and (2) learned historical performance signals derived from saved history (e.g., win/place/show rates and/or recent form).",
+        "A learned weight/trust-factor structure is stored on-device (as part of learned state) and is updated after saving races based on prediction vs outcome (probability calibration feedback).",
+        "The model outputs per-contender implied probabilities (still stored on RaceEntry.impliedProbabilities) and a strategyId that reflects the enhanced strategy (not the old hardcoded id).",
+        "User-facing labels/descriptions in the UI remain in English and do not claim guaranteed improvement."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/storage/localMemoryStore.ts",
+          "operation": "modify",
+          "description": "Extend LearnedState to persist a learnable weight/trust-factor structure for multiple prediction signals, and update recomputation logic to update these weights after processing each saved race using a continuous calibration feedback loop that compares stored implied probabilities vs actual outcomes; default safely when missing."
+        },
+        {
+          "path": "frontend/src/features/learning/model.ts",
+          "operation": "modify",
+          "description": "Update makePrediction to compute per-contender probabilities via a weighted combination of at least (a) market odds signal and (b) learned historical performance signals from learnedState, using learned trust-factor weights; emit an updated strategyId representing the enhanced ensemble strategy and keep impliedProbabilities on RaceEntry."
         },
         {
           "path": "frontend/src/features/entries/EntryFlow.tsx",
           "operation": "modify",
-          "description": "Update any user-facing odds helper text and placeholders to match fractional numerator-only input (remove/update decimal example text like \"Enter odds (e.g., 2.5)\" and align with the \"-/1\" blank state and fixed \"/1\" suffix)."
+          "description": "Review and adjust any user-facing prediction description text to remain English, clearly descriptive, and non-promissory (no guaranteed-improvement claims) while continuing to display implied probabilities and confidence. Use existing shadcn-ui components already in use; verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-14",
-      "summary": "Add an in-app, English-language \"Android APK\" help section explaining how to generate a usable Android APK by wrapping the deployed web app URL in a WebView using a website-to-APK generator (including websitetoapk.com).",
+      "id": "REQ-35",
+      "summary": "Add streak/slump and variance/consistency signals (using margins where available) into learned stats, prediction confidence adjustment, and Stats view summaries.",
       "acceptanceCriteria": [
-        "The app UI contains a clearly discoverable \"Android APK\" (or similar) help area that provides step-by-step instructions.",
-        "The instructions mention that this is a web app and describe the approach of using a WebView wrapper, including the example generator URL \"websitetoapk.com\".",
-        "All help text is in English."
+        "The learned on-device stats include a streak/slump indicator per contender number based on recent outcomes (e.g., consecutive podium appearances or wins).",
+        "If podium margins are available, the learned on-device stats include a simple variance/consistency measure derived from recent margins; if margins are not available, the app gracefully degrades (variance shown as unavailable).",
+        "Prediction confidence is adjusted downward when variance/erratic performance is high (when the variance signal is available).",
+        "Stats view displays streak/slump and variance/consistency signals using English labels and without requiring any backend services."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/features/help/AndroidApkHelp.tsx",
-          "operation": "create",
-          "description": "Create an in-app help UI section titled \"Android APK\" (or similar) containing English step-by-step instructions explaining that the app is a web app and that a usable Android APK can be created by wrapping the deployed site URL in a WebView via a website-to-APK generator; explicitly mention the example generator \"websitetoapk.com\"."
+          "path": "frontend/src/storage/localMemoryStore.ts",
+          "operation": "modify",
+          "description": "Extend learned-state computations to derive per-contender streak/slump indicators from recent outcomes and a variance/consistency measure from recent recorded margins when available; represent variance as unavailable when insufficient/missing margin data."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/features/learning/model.ts",
           "operation": "modify",
-          "description": "Wire the new Android APK help section into the existing UI in a clearly discoverable way (e.g., add a new TabsTrigger/TabsContent alongside \"New Entry\" and \"History\" that renders the AndroidApkHelp component). Ensure it is reachable from the main navigation and not an orphaned component."
+          "description": "Incorporate streak/slump and (when available) variance/consistency signals into confidence calculation (e.g., reduce confidence under high variance/erratic performance) while keeping odds as a core signal."
+        },
+        {
+          "path": "frontend/src/features/analytics/StatsAnalyticsView.tsx",
+          "operation": "modify",
+          "description": "Add English-labeled streak/slump and variance/consistency summaries to the contender stats sections, showing variance as unavailable when margin data is missing/insufficient. Use existing shadcn-ui components already referenced; verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-36",
+      "summary": "Update bet sizing guidance and EntryFlow bet UI/validation to support a 100 minimum and 10,000 maximum bet amount with English labels.",
+      "acceptanceCriteria": [
+        "Bet sizing calculation (frontend/src/lib/betSizing.ts) enforces min=100 and max=10,000.",
+        "EntryFlow bet recording validation accepts bet amounts from 100 to 10,000 inclusive.",
+        "The Bet Amount selector UI in EntryFlow offers values that include 100 and reach 10,000 (spacing/increments can be updated as needed), and the label text reflects the new range in English."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/betSizing.ts",
+          "operation": "modify",
+          "description": "Adjust bet sizing clamping and rounding so suggested amounts respect min=100 and max=10,000; update any increments/rounding logic accordingly and keep the returned explanation in English."
+        },
+        {
+          "path": "frontend/src/features/entries/EntryFlow.tsx",
+          "operation": "modify",
+          "description": "Update bet amount validation to accept 100–10,000 inclusive; update the Bet Amount label text to reflect the new English range and adjust the Select options to include 100 and reach 10,000 (choose appropriate increments). Use existing shadcn-ui Select/Label components already in use; verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-37",
+      "summary": "Update localStorage schema/version handling so newly added learned-state fields (stats, streak/variance, weights) are backward compatible and recomputation persists across sessions.",
+      "acceptanceCriteria": [
+        "Existing localStorage entries created before this change still load successfully after the update (no forced data wipe solely due to new fields).",
+        "New learned-state fields default safely when absent and are recomputed from history when possible.",
+        "Recompute learned state (triggered after saving a race) updates the new signals/weights consistently across sessions (survives reload)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/storage/storageKeys.ts",
+          "operation": "modify",
+          "description": "Adjust storage versioning approach (and/or add migration identifiers) to support backward-compatible upgrades without forcing a data wipe for existing users."
+        },
+        {
+          "path": "frontend/src/storage/localMemoryStore.ts",
+          "operation": "modify",
+          "description": "Replace version-mismatch behavior that clears data with a safe migration/defaulting strategy: load existing entries when possible, default missing new fields, and rely on recomputation from history to fill derived learned-state fields; ensure learned-state fields (weights, streak/variance, expanded contender stats) survive reload via save/load."
+        },
+        {
+          "path": "frontend/src/storage/useOnDeviceMemory.ts",
+          "operation": "modify",
+          "description": "Ensure the recompute flow triggered after saving a race persists the updated learned state (including new signals/weights) and that initialization triggers safe recomputation when loaded learned-state fields are missing or outdated."
         }
       ]
     }
