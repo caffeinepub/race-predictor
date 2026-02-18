@@ -1,11 +1,10 @@
 # Specification
 
 ## Summary
-**Goal:** Retry deployment of the application to the Internet Computer network after a technical issue.
+**Goal:** Remove the Dashboard tab from the navigation bar so users can no longer access it.
 
 **Planned changes:**
-- Redeploy the backend canister without code modifications
-- Redeploy the frontend assets without code modifications
-- Ensure both canisters compile and deploy successfully
+- Remove Dashboard tab UI element from the navigation bar
+- Remove Dashboard route from the routing configuration in App.tsx
 
-**User-visible outcome:** The application is successfully deployed and accessible via its Internet Computer canister URL.
+**User-visible outcome:** Users will see four tabs (Info, New Entry, Stats, History) instead of five, and cannot navigate to the Dashboard screen from the tab bar.

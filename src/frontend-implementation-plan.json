@@ -1,38 +1,22 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Retry deployment after technical issue",
+  "title": "Remove Dashboard tab and route from navigation",
   "requirements": [
     {
-      "id": "REQ-92",
-      "summary": "Deploy the current application state to the Internet Computer network",
+      "id": "REQ-93",
+      "summary": "Remove the Dashboard tab UI element and its associated route from the navigation bar in App.tsx so users cannot access DashboardView.tsx from the tab navigation",
       "acceptanceCriteria": [
-        "The backend canister (backend/main.mo) compiles without errors",
-        "The frontend build completes successfully",
-        "Both canisters are deployed to the Internet Computer network",
-        "The deployed application is accessible via its canister URL",
-        "No deployment errors or technical snafus occur"
+        "The Dashboard tab is no longer visible in the app's tab navigation bar",
+        "The route to DashboardView.tsx is removed from the routing configuration in App.tsx",
+        "Users cannot navigate to the Dashboard screen from any tab in the UI",
+        "All other tabs (Info, New Entry, Stats, History) remain functional and unchanged"
       ],
       "file_operations": [
         {
-          "path": "frontend/DEPLOYMENT.md",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Verify and update deployment checklist to ensure all pre-deployment steps are documented and current. Confirm build verification steps match the actual build process for the GTA Online Horse Track Guesser application."
-        },
-        {
-          "path": "frontend/index.html",
-          "operation": "modify",
-          "description": "Verify HTML entry point integrity including PWA manifest links, app icons at frontend/public/assets/generated/app-icon.dim_512x512.png and frontend/public/assets/generated/app-icon-maskable.dim_512x512.png, theme colors, and viewport configuration are correct for deployment."
-        },
-        {
-          "path": "frontend/public/manifest.webmanifest",
-          "operation": "modify",
-          "description": "Verify PWA manifest references to generated icon assets at /assets/generated/app-icon.dim_512x512.png and /assets/generated/app-icon-maskable.dim_512x512.png are correct and match the actual asset paths for deployment."
-        },
-        {
-          "path": "frontend/src/main.tsx",
-          "operation": "modify",
-          "description": "Verify application entry point configuration including React Query setup, Internet Identity provider initialization, and root component mounting to ensure clean deployment without runtime errors."
+          "description": "Remove the Dashboard tab from the tab navigation array and its corresponding route configuration. Remove any imports related to DashboardView.tsx. Ensure the remaining four tabs (Info, New Entry, Stats, History) maintain their functionality and the default active tab is set appropriately (e.g., to 'info' if Dashboard was previously default)."
         }
       ]
     }

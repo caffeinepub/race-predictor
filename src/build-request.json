@@ -1,39 +1,37 @@
 {
   "kind": "build_request",
-  "title": "Retry deployment after technical issue",
-  "priority": "high",
+  "title": "Remove Dashboard tab and route from navigation",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-92",
-      "text": "Deploy the current application state to the Internet Computer network, ensuring both the frontend assets and the backend canister compile and deploy successfully without errors.",
-      "target": "both",
+      "id": "REQ-93",
+      "text": "Remove the Dashboard tab UI element and its associated route from the navigation bar in App.tsx so users cannot access DashboardView.tsx from the tab navigation.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-try-again"
+          "msg-user-final"
         ],
         "quotes": [
-          "Try again"
+          "Remove dashboard screen."
         ]
       },
       "acceptanceCriteria": [
-        "The backend canister (backend/main.mo) compiles without errors",
-        "The frontend build completes successfully",
-        "Both canisters are deployed to the Internet Computer network",
-        "The deployed application is accessible via its canister URL",
-        "No deployment errors or technical snafus occur"
+        "The Dashboard tab is no longer visible in the app's tab navigation bar",
+        "The route to DashboardView.tsx is removed from the routing configuration in App.tsx",
+        "Users cannot navigate to the Dashboard screen from any tab in the UI",
+        "All other tabs (Info, New Entry, Stats, History) remain functional and unchanged"
       ]
     }
   ],
   "constraints": [
-    "Do not modify any application code or features",
-    "Do not change the backend schema or frontend UI",
-    "This is a deployment retry only, not a code change request"
+    "Do not modify DashboardView.tsx file itself",
+    "Preserve all existing functionality in Info, New Entry, Stats, and History tabs",
+    "Do not change the InfoDashboardView.tsx component or its content"
   ],
   "nonGoals": [
-    "Adding new features",
-    "Modifying existing functionality",
-    "Changing the visual theme or UI components",
-    "Updating data models or storage logic"
+    "Deleting the DashboardView.tsx file from the codebase",
+    "Modifying the content or behavior of any other tab screens",
+    "Changing the overall navigation structure beyond removing the Dashboard tab"
   ],
   "imageRequirements": {
     "required": [],

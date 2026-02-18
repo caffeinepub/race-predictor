@@ -6,7 +6,6 @@ import { SkipToContent } from '@/components/SkipToContent';
 import { EntryFlow } from '@/features/entries/EntryFlow';
 import { HistoryList } from '@/features/history/HistoryList';
 import { StatsAnalyticsView } from '@/features/analytics/StatsAnalyticsView';
-import { DashboardView } from '@/features/dashboard/DashboardView';
 import { InfoDashboardView } from '@/features/dashboard/InfoDashboardView';
 import { useOnDeviceMemory } from '@/storage/useOnDeviceMemory';
 import { Toaster } from '@/components/ui/sonner';
@@ -48,9 +47,8 @@ function App() {
                 <main id="main-content" className="pb-20">
                     <MobilePageContainer>
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                            <TabsList className="grid w-full grid-cols-5 mb-6">
+                            <TabsList className="grid w-full grid-cols-4 mb-6">
                                 <TabsTrigger value="info">Info</TabsTrigger>
-                                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                                 <TabsTrigger value="entry">New Entry</TabsTrigger>
                                 <TabsTrigger value="stats">Stats</TabsTrigger>
                                 <TabsTrigger value="history">History</TabsTrigger>
@@ -58,14 +56,6 @@ function App() {
 
                             <TabsContent value="info">
                                 <InfoDashboardView 
-                                    entries={entries}
-                                    learnedState={learnedState}
-                                    onReset={clearMemory}
-                                />
-                            </TabsContent>
-
-                            <TabsContent value="dashboard">
-                                <DashboardView 
                                     entries={entries}
                                     learnedState={learnedState}
                                     onReset={clearMemory}

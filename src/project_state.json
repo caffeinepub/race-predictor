@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 47,
+  "projectStateVersion": 49,
   "summary": "Odds storage must include both numerator and denominator (or decimal form) so 5/1 vs 5/2 are not conflated. Store computed implied probability with each race. Prediction output must include value edge (predictedProb – impliedProb) for betting decisions. Update bet sizing to factor in edge + variance, not just raw probability. Model weight updates should be driven by log-loss, not arbitrary Bayesian vibes. Add session window (e.g., last 50 races) for recency-weighted stats blended with lifetime stats. Store predicted probabilities per race for real calibration tracking. Ensure contender identity (name or number) is stored separately from lane/slot index. Cache computed contender stats on-device for fast load times.",
   "architectural_notes": [
     "Use on-device persistent storage (e.g., AsyncStorage) for races/history and learned parameters.",
@@ -737,6 +737,14 @@
         "REQ-91"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-remove-the-dashboard-tab-ui-element-and-its-associated-route-from-the-navigation-bar-in-app-tsx-so-users-cannot-access-dashboardview-tsx-from-the-tab-navigation",
+      "title": "Remove the Dashboard tab UI element and its associated route from the navigation bar in App.tsx so users cannot access DashboardView.tsx from the tab navigation.",
+      "reqIds": [
+        "REQ-93"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -951,12 +959,6 @@
       "status": "pending"
     },
     {
-      "id": "AR-38",
-      "summary": "Add a new main info page with counters for total races run, prediction accuracy, and ROI",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
       "id": "AR-39",
       "summary": "Change bet amount constraints to 0 minimum and 10,000 maximum, and allow custom input (not just increments of 1,000)",
       "reqIds": [],
@@ -975,12 +977,6 @@
       "status": "pending"
     },
     {
-      "id": "AR-38",
-      "summary": "Add a new main info page with counters for total races run, prediction accuracy, and ROI",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
       "id": "AR-39",
       "summary": "Change bet amount constraints to 0 minimum and 10,000 maximum, and allow custom input (not just increments of 1,000)",
       "reqIds": [],
@@ -989,12 +985,6 @@
     {
       "id": "AR-40",
       "summary": "Differentiate streak tracking: Win streaks for 1st place only, separate placer streak for 2nd/3rd, lower-tier streak for 4th-6th, and incorporate all streak types into prediction model alongside other factors",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-41",
-      "summary": "Remove dashboard in favor of info screen (keep everything else identical)",
       "reqIds": [],
       "status": "pending"
     },

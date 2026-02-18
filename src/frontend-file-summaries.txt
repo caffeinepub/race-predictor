@@ -1,5 +1,5 @@
 {
-  "frontend/src/App.tsx": "Main app component with five-tab navigation (Info, Dashboard, New Entry, Stats, History) integrating the new InfoDashboardView as the default tab with proper null-safety checks for learnedState.",
+  "frontend/src/App.tsx": "Main app component with four-tab navigation (Info, New Entry, Stats, History) integrating the InfoDashboardView as the default tab with proper null-safety checks for learnedState.",
   "frontend/src/components/AppHeader.tsx": "Sticky header component displaying app icon and title \"GTA Online Horse Track Guesser\" with custom subtitle, optimized for mobile viewports.",
   "frontend/src/components/MobilePageContainer.tsx": "Layout wrapper component that enforces mobile-first max-width and consistent horizontal padding.",
   "frontend/src/components/SkipToContent.tsx": "Accessibility component providing keyboard users a skip-to-main-content link with proper focus styling.",

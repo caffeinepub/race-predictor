@@ -1,4 +1,23 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-remove-the-dashboard-tab-ui-element-and-its-associated-route-from-the-navigation-bar-in-app-tsx-so-users-cannot-access-dashboardview-tsx-from-the-tab-navigation",
+      "featureTitle": "Remove the Dashboard tab UI element and its associated route from the navigation bar in App.tsx so users cannot access DashboardView.tsx from the tab navigation.",
+      "files": [
+        "frontend/src/App.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-93"
+      ],
+      "confidence": "high"
+    }
+  ]
 }
