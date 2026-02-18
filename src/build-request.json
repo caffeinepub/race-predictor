@@ -1,0 +1,105 @@
+{
+  "kind": "build_request",
+  "title": "Rename app, switch odds to fractional /1 input, and add Android APK instructions",
+  "projectName": "GTA Online Horse Track Guesser",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-11",
+      "text": "Rename the app everywhere it is user-visible from \"Race Predictor\" to the exact new name: \"GTA Online Horse Track Guesser\" (including the header title text, the app icon alt text, and the HTML document title).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Change the app name to \"GTA Online Horse Track Guesser\""
+        ]
+      },
+      "acceptanceCriteria": [
+        "The header (AppHeader) shows \"GTA Online Horse Track Guesser\" as the app title.",
+        "The app icon image alt text uses \"GTA Online Horse Track Guesser\".",
+        "The browser tab/document title is \"GTA Online Horse Track Guesser\" (frontend/index.html title updated)."
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "text": "Update the race entry odds input UI to use fractional odds with a fixed denominator of \"/1\": each contender row must have a single numeric input for the numerator only, display a constant \"/1\" immediately next to it (not editable), and show \"-/1\" as the blank state.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "I want the odds to be put in as a \"1/1, or 29/1,\" fractional kind of style with \"-/1\" as the blank.",
+          "The odds field should be 1 numeric box for the first number of the odds (before the \"/\"), and the second should be a constant \"/1\" instead of a box."
+        ]
+      },
+      "acceptanceCriteria": [
+        "In the New Entry flow, each contender (1–6) shows a single numeric field for the numerator and a non-editable \"/1\" suffix.",
+        "When the numerator is empty, the UI reads as \"-/1\" (e.g., placeholder '-' in the numerator field with the visible '/1' suffix).",
+        "The app continues to store and use odds as numeric values for prediction/learning (numerator interpreted as X in X/1).",
+        "Validation errors remain in English and still prevent prediction/save when odds are missing or <= 0."
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "text": "Update all odds displays in the UI to render odds in the same fractional format \"{numerator}/1\" instead of showing a raw number (e.g., in History contender badges).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "I want the odds to be put in as a \"1/1, or 29/1,\" fractional kind of style..."
+        ]
+      },
+      "acceptanceCriteria": [
+        "In History, each contender badge renders odds like \"#3 (29/1)\" rather than \"#3 (29)\".",
+        "No part of the UI displays contender odds as a plain decimal/float placeholder example (e.g., remove or update \"Enter odds (e.g., 2.5)\" to a fractional example)."
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "text": "Add an in-app, English-language help section that explains how to get a usable Android APK from the deployed web app by wrapping the site URL in a WebView using a website-to-APK generator (include the steps and the example site mentioned in the conversation).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Also, please tell me how to download this as a usable apk. for android."
+        ]
+      },
+      "acceptanceCriteria": [
+        "The app UI contains a clearly discoverable \"Android APK\" (or similar) help area that provides step-by-step instructions.",
+        "The instructions mention that this is a web app and describe the approach of using a WebView wrapper, including the example generator URL \"websitetoapk.com\".",
+        "All help text is in English."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify any files under frontend/src/components/ui (compose existing UI components instead).",
+    "Do not edit any paths listed in SYSTEM_CONTEXT.frontend.immutablePaths.",
+    "Backend must remain single-actor Motoko; no additional backend services or databases."
+  ],
+  "nonGoals": [
+    "Generating or signing an actual Android APK inside this project.",
+    "Adding native Android/React Native/Expo code.",
+    "Implementing external authentication methods beyond Internet Identity."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}

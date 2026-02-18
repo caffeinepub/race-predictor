@@ -1,0 +1,180 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 7,
+  "summary": "Build an Android-usable React Native app for horse-race predictions that learns from user-provided race results over time using on-device persistent storage, includes stats/history, and provides a reset option to clear learned memory.",
+  "architectural_notes": [
+    "Use on-device persistent storage (e.g., AsyncStorage) for races/history and learned parameters.",
+    "Prediction algorithm should incorporate historical user-entered outcomes to adapt over time (simple incremental model acceptable).",
+    "Provide a one-tap reset that clears all persisted keys related to races/model state.",
+    "Odds should be stored/handled as fractional odds with fixed denominator 1; UI shows \"-/1\" placeholder when numerator is blank."
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-make-the-app-usable-on-android-via-a-mobile-first-responsive-web-ui-touch-friendly-controls-readable-typography-and-layouts-that-work-well-on-small-screens",
+      "title": "Make the app usable on Android via a mobile-first responsive web UI (touch-friendly controls, readable typography, and layouts that work well on small screens).",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-structured-data-entry-flow-that-lets-the-user-provide-prediction-inputs-and-outcomes-the-data-the-user-gives-the-app-in-english-labeled-forms-with-basic-validation-and-clear-error-messages",
+      "title": "Add a structured data-entry flow that lets the user provide prediction inputs and outcomes (the data the user gives the app) in English-labeled forms, with basic validation and clear error messages.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-persist-all-user-provided-data-and-learned-prediction-state-on-device-using-durable-browser-storage-so-app-state-survives-reloads-and-long-periods-between-sessions-long-term-memory",
+      "title": "Persist all user-provided data and learned prediction state on-device using durable browser storage, so app state survives reloads and long periods between sessions (long-term memory).",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-prediction-improvement-over-time-by-updating-the-prediction-logic-model-based-on-the-user-s-saved-historical-data-adaptive-learning-and-reflect-the-updated-accuracy-metrics-in-the-ui",
+      "title": "Implement prediction improvement over time by updating the prediction logic/model based on the user’s saved historical data (adaptive learning), and reflect the updated accuracy/metrics in the UI.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-clearly-labeled-reset-app-memory-button-that-clears-all-on-device-stored-user-data-and-learned-prediction-state-after-a-confirmation-prompt-returning-the-app-to-a-fresh-state",
+      "title": "Add a clearly labeled \"Reset App Memory\" button that clears all on-device stored user data and learned prediction state after a confirmation prompt, returning the app to a fresh state.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-establish-a-coherent-distinctive-visual-theme-colors-typography-spacing-component-styling-that-is-consistently-applied-across-screens-avoid-blue-purple-as-primary-brand-colors",
+      "title": "Establish a coherent, distinctive visual theme (colors, typography, spacing, component styling) that is consistently applied across screens; avoid blue/purple as primary brand colors.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-required-generated-static-images-to-the-app-and-render-them-in-the-ui-where-appropriate-e-g-app-icon-branding-areas-from-frontend-public-assets-generated",
+      "title": "Add required generated static images to the app and render them in the UI where appropriate (e.g., app icon/branding areas) from frontend/public/assets/generated.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-appheader-subtitle-text-ai-powered-learning-with-the-exact-new-subtitle-text-aka-big-t-s-glue-factory-contenders-aka-beebo-jr",
+      "title": "Replace the AppHeader subtitle text \"AI-Powered Learning\" with the exact new subtitle text: \"AKA Big T's Glue Factory Contenders, AKA\" Beebo Jr.\".",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-manual-contender-number-entry-and-instead-auto-populate-exactly-6-contenders-with-fixed-numbers-1-2-3-4-5-and-6-in-the-entry-flow-the-user-should-only-input-odds-for-each-fixed-contender-and-the-ui-must-not-provide-add-remove-contender-controls",
+      "title": "Remove manual contender number entry and instead auto-populate exactly 6 contenders with fixed numbers \"1\", \"2\", \"3\", \"4\", \"5\", and \"6\" in the entry flow; the user should only input odds for each fixed contender, and the UI must not provide add/remove contender controls.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-prediction-confidence-ui-to-show-a-confidence-bar-that-transitions-from-red-at-low-confidence-to-green-at-high-confidence-and-display-an-emoji-indicator-that-reflects-how-good-bad-the-confidence-feels",
+      "title": "Update the prediction confidence UI to show a confidence bar that transitions from red at low confidence to green at high confidence, and display an emoji indicator that reflects how good/bad the confidence feels.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-rename-the-app-everywhere-it-is-user-visible-from-race-predictor-to-the-exact-new-name-gta-online-horse-track-guesser-including-the-header-title-text-the-app-icon-alt-text-and-the-html-document-title",
+      "title": "Rename the app everywhere it is user-visible from \"Race Predictor\" to the exact new name: \"GTA Online Horse Track Guesser\" (including the header title text, the app icon alt text, and the HTML document title).",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-race-entry-odds-input-ui-to-use-fractional-odds-with-a-fixed-denominator-of-1-each-contender-row-must-have-a-single-numeric-input-for-the-numerator-only-display-a-constant-1-immediately-next-to-it-not-editable-and-show-1-as-the-blank-state",
+      "title": "Update the race entry odds input UI to use fractional odds with a fixed denominator of \"/1\": each contender row must have a single numeric input for the numerator only, display a constant \"/1\" immediately next to it (not editable), and show \"-/1\" as the blank state.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-all-odds-displays-in-the-ui-to-render-odds-in-the-same-fractional-format-numerator-1-instead-of-showing-a-raw-number-e-g-in-history-contender-badges",
+      "title": "Update all odds displays in the UI to render odds in the same fractional format \"{numerator}/1\" instead of showing a raw number (e.g., in History contender badges).",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-in-app-english-language-help-section-that-explains-how-to-get-a-usable-android-apk-from-the-deployed-web-app-by-wrapping-the-site-url-in-a-webview-using-a-website-to-apk-generator-include-the-steps-and-the-example-site-mentioned-in-the-conversation",
+      "title": "Add an in-app, English-language help section that explains how to get a usable Android APK from the deployed web app by wrapping the site URL in a WebView using a website-to-APK generator (include the steps and the example site mentioned in the conversation).",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Make the app usable on Android (React Native/Expo compatibility, Android UI/behavior checks)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Persist race data on-device with long-term memory (local storage) so predictions improve over time",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Update prediction logic to learn from recorded user data over time (adaptive model based on history)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Add a \"Reset app memory\" button to clear stored data and learned state",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Change the \"AI-Powered Learning\" label text to: \"AKA Big T's Glue Factory Contenders, AKA\" Beebo Jr.\"",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Auto-populate contenders as 1, 2, 3, 4, 5, and 6 (no manual contender input required)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Update confidence bar UI: red when low gradually shifting to green as percentage increases, plus emojis indicating how good/bad it feels",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Change odds input to fractional style with one numeric input for the numerator and a constant \"/1\" denominator (show \"-/1\" when blank)",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Race Predictor",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

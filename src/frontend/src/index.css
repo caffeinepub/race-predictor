@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --radius: 0.75rem;
+        
+        /* Warm terracotta palette - non-blue/purple */
+        --background: 0.98 0.01 40;
+        --foreground: 0.25 0.02 30;
+        
+        --card: 1 0 0;
+        --card-foreground: 0.25 0.02 30;
+        
+        --popover: 1 0 0;
+        --popover-foreground: 0.25 0.02 30;
+        
+        --primary: 0.55 0.15 35;
+        --primary-foreground: 0.98 0.01 40;
+        
+        --secondary: 0.92 0.02 45;
+        --secondary-foreground: 0.35 0.03 30;
+        
+        --muted: 0.94 0.015 40;
+        --muted-foreground: 0.50 0.02 35;
+        
+        --accent: 0.70 0.12 50;
+        --accent-foreground: 0.98 0.01 40;
+        
+        --destructive: 0.55 0.22 25;
+        --destructive-foreground: 0.98 0.01 40;
+        
+        --border: 0.90 0.01 40;
+        --input: 0.90 0.01 40;
+        --ring: 0.55 0.15 35;
+        
+        --chart-1: 0.60 0.18 35;
+        --chart-2: 0.65 0.14 50;
+        --chart-3: 0.70 0.10 60;
+        --chart-4: 0.55 0.20 25;
+        --chart-5: 0.75 0.08 70;
+    }
+
+    .dark {
+        --background: 0.20 0.02 30;
+        --foreground: 0.95 0.01 40;
+        
+        --card: 0.25 0.02 30;
+        --card-foreground: 0.95 0.01 40;
+        
+        --popover: 0.22 0.02 30;
+        --popover-foreground: 0.95 0.01 40;
+        
+        --primary: 0.65 0.14 40;
+        --primary-foreground: 0.20 0.02 30;
+        
+        --secondary: 0.30 0.03 35;
+        --secondary-foreground: 0.95 0.01 40;
+        
+        --muted: 0.30 0.03 35;
+        --muted-foreground: 0.65 0.02 40;
+        
+        --accent: 0.50 0.12 45;
+        --accent-foreground: 0.95 0.01 40;
+        
+        --destructive: 0.50 0.20 20;
+        --destructive-foreground: 0.95 0.01 40;
+        
+        --border: 0.35 0.02 35;
+        --input: 0.35 0.02 35;
+        --ring: 0.60 0.12 40;
+        
+        --chart-1: 0.55 0.16 35;
+        --chart-2: 0.60 0.12 50;
+        --chart-3: 0.65 0.08 60;
+        --chart-4: 0.50 0.18 25;
+        --chart-5: 0.70 0.06 70;
+    }
+
+    * {
+        @apply border-border;
+    }
+    
+    body {
+        @apply bg-background text-foreground;
+        font-feature-settings: "rlig" 1, "calt" 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    /* Improve touch targets for mobile */
+    button, a, input, select, textarea {
+        @apply touch-manipulation;
+    }
+    
+    /* Better focus visibility */
+    *:focus-visible {
+        @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+    }
+}

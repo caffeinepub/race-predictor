@@ -1,0 +1,96 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "GTA Online Horse Track Guesser – rename, fractional odds UI, and Android APK help",
+  "requirements": [
+    {
+      "id": "REQ-11",
+      "summary": "Rename all user-visible app name occurrences to \"GTA Online Horse Track Guesser\" (header title, icon alt text, and document title).",
+      "acceptanceCriteria": [
+        "The header (AppHeader) shows \"GTA Online Horse Track Guesser\" as the app title.",
+        "The app icon image alt text uses \"GTA Online Horse Track Guesser\".",
+        "The browser tab/document title is \"GTA Online Horse Track Guesser\" (frontend/index.html title updated)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/AppHeader.tsx",
+          "operation": "modify",
+          "description": "Update the header title text and app icon alt text from \"Race Predictor\" to the exact new name \"GTA Online Horse Track Guesser\"."
+        },
+        {
+          "path": "frontend/index.html",
+          "operation": "modify",
+          "description": "Update the HTML document <title> text to \"GTA Online Horse Track Guesser\" so the browser tab title matches the new app name."
+        }
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "summary": "Change the New Entry odds input to fractional numerator-only input with a fixed, non-editable \"/1\" suffix and a blank \"-/1\" visual state, while keeping stored odds numeric and validation intact.",
+      "acceptanceCriteria": [
+        "In the New Entry flow, each contender (1–6) shows a single numeric field for the numerator and a non-editable \"/1\" suffix.",
+        "When the numerator is empty, the UI reads as \"-/1\" (e.g., placeholder '-' in the numerator field with the visible '/1' suffix).",
+        "The app continues to store and use odds as numeric values for prediction/learning (numerator interpreted as X in X/1).",
+        "Validation errors remain in English and still prevent prediction/save when odds are missing or <= 0."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/features/entries/EntryFlow.tsx",
+          "operation": "modify",
+          "description": "Update the contenders odds input row UI to: (1) accept a single numeric numerator only (use integer-friendly settings such as step=1), (2) render a constant, non-editable \"/1\" suffix immediately next to the input, (3) show a blank \"-/1\" state by using '-' as the input placeholder while keeping the visible '/1' suffix, and (4) continue storing odds as a numeric value used by prediction/learning (numerator interpreted as X in X/1). Ensure existing validation behavior is preserved (missing/<=0 blocks predict/save with English errors)."
+        },
+        {
+          "path": "frontend/src/features/entries/validation.ts",
+          "operation": "modify",
+          "description": "Review and adjust contender-odds validation messaging/logic as needed to ensure it still correctly treats empty numerator as missing (odds 0) and blocks predict/save when odds are missing or <= 0, with English-language error strings."
+        }
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "summary": "Render all displayed odds in the UI as fractional \"{numerator}/1\" instead of raw numbers and update any fractional examples/placeholders accordingly.",
+      "acceptanceCriteria": [
+        "In History, each contender badge renders odds like \"#3 (29/1)\" rather than \"#3 (29)\".",
+        "No part of the UI displays contender odds as a plain decimal/float placeholder example (e.g., remove or update \"Enter odds (e.g., 2.5)\" to a fractional example)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/oddsFormat.ts",
+          "operation": "create",
+          "description": "Add a small shared formatter utility for odds display (e.g., convert a numeric odds value into a fractional string like \"{numerator}/1\"), to keep formatting consistent across Entry and History UIs."
+        },
+        {
+          "path": "frontend/src/features/history/HistoryList.tsx",
+          "operation": "modify",
+          "description": "Update contender badge rendering to display odds in fractional format \"{numerator}/1\" (e.g., \"#3 (29/1)\") using the shared odds formatting utility instead of showing the raw numeric odds value."
+        },
+        {
+          "path": "frontend/src/features/entries/EntryFlow.tsx",
+          "operation": "modify",
+          "description": "Update any user-facing odds helper text and placeholders to match fractional numerator-only input (remove/update decimal example text like \"Enter odds (e.g., 2.5)\" and align with the \"-/1\" blank state and fixed \"/1\" suffix)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "summary": "Add an in-app, English-language \"Android APK\" help section explaining how to generate a usable Android APK by wrapping the deployed web app URL in a WebView using a website-to-APK generator (including websitetoapk.com).",
+      "acceptanceCriteria": [
+        "The app UI contains a clearly discoverable \"Android APK\" (or similar) help area that provides step-by-step instructions.",
+        "The instructions mention that this is a web app and describe the approach of using a WebView wrapper, including the example generator URL \"websitetoapk.com\".",
+        "All help text is in English."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/features/help/AndroidApkHelp.tsx",
+          "operation": "create",
+          "description": "Create an in-app help UI section titled \"Android APK\" (or similar) containing English step-by-step instructions explaining that the app is a web app and that a usable Android APK can be created by wrapping the deployed site URL in a WebView via a website-to-APK generator; explicitly mention the example generator \"websitetoapk.com\"."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wire the new Android APK help section into the existing UI in a clearly discoverable way (e.g., add a new TabsTrigger/TabsContent alongside \"New Entry\" and \"History\" that renders the AndroidApkHelp component). Ensure it is reachable from the main navigation and not an orphaned component."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-18T10:11:19.604Z",
+  "summary": "Most requested changes appear implemented: app rename (header alt/title + HTML title), odds formatting utilities and History formatting, and a new in-app Android APK help tab with WebView-wrapper instructions referencing websitetoapk.com. One specific acceptance criterion for the New Entry odds input blank state (showing “-/1”) cannot be confirmed from the provided diff summary due to truncation.",
+  "missing_requirements": [
+    {
+      "id": "REQ-12",
+      "requirement": "When the numerator is empty, the UI reads as \"-/1\" (e.g., placeholder '-' in the numerator field with the visible '/1' suffix).",
+      "reason": "A formatter for the placeholder (\"-/1\") was added, but the EntryFlow UI portion that would show the placeholder/suffix next to the input is truncated; there is no explicit evidence in the visible diff that the numerator input uses placeholder '-' while showing a fixed '/1' suffix in the New Entry rows.",
+      "evidence": [
+        "frontend/src/lib/oddsFormat.ts",
+        "frontend/src/features/entries/EntryFlow.tsx (truncated)"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Confidence emoji indicators for prediction confidence (😰/😕/😐/🙂/😄).",
+      "reason": "Not requested by any requirement; appears to be newly introduced in EntryFlow per the diff content and file summary.",
+      "evidence": [
+        "frontend/src/features/entries/EntryFlow.tsx (truncated)",
+        "frontend-file-summaries.txt (EntryFlow description mentions \"emoji indicators\")"
+      ]
+    }
+  ],
+  "confidence": 0.72,
+  "changed_files": [
+    "frontend-file-summaries.txt",
+    "frontend/index.html",
+    "frontend/src/App.tsx",
+    "frontend/src/components/AppHeader.tsx",
+    "frontend/src/features/entries/EntryFlow.tsx",
+    "frontend/src/features/help/AndroidApkHelp.tsx",
+    "frontend/src/features/history/HistoryList.tsx",
+    "frontend/src/lib/oddsFormat.ts",
+    "project_state.json"
+  ]
+}

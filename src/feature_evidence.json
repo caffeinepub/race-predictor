@@ -1,0 +1,81 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-rename-the-app-everywhere-it-is-user-visible-from-race-predictor-to-the-exact-new-name-gta-online-horse-track-guesser-including-the-header-title-text-the-app-icon-alt-text-and-the-html-document-title",
+      "featureTitle": "Rename the app everywhere it is user-visible from \"Race Predictor\" to the exact new name: \"GTA Online Horse Track Guesser\" (including the header title text, the app icon alt text, and the HTML document title).",
+      "files": [
+        "frontend/index.html",
+        "frontend/src/components/AppHeader.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-11"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-race-entry-odds-input-ui-to-use-fractional-odds-with-a-fixed-denominator-of-1-each-contender-row-must-have-a-single-numeric-input-for-the-numerator-only-display-a-constant-1-immediately-next-to-it-not-editable-and-show-1-as-the-blank-state",
+      "featureTitle": "Update the race entry odds input UI to use fractional odds with a fixed denominator of \"/1\": each contender row must have a single numeric input for the numerator only, display a constant \"/1\" immediately next to it (not editable), and show \"-/1\" as the blank state.",
+      "files": [
+        "frontend/src/features/entries/EntryFlow.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-12"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-all-odds-displays-in-the-ui-to-render-odds-in-the-same-fractional-format-numerator-1-instead-of-showing-a-raw-number-e-g-in-history-contender-badges",
+      "featureTitle": "Update all odds displays in the UI to render odds in the same fractional format \"{numerator}/1\" instead of showing a raw number (e.g., in History contender badges).",
+      "files": [
+        "frontend/src/features/entries/EntryFlow.tsx",
+        "frontend/src/features/history/HistoryList.tsx",
+        "frontend/src/lib/oddsFormat.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-13"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-an-in-app-english-language-help-section-that-explains-how-to-get-a-usable-android-apk-from-the-deployed-web-app-by-wrapping-the-site-url-in-a-webview-using-a-website-to-apk-generator-include-the-steps-and-the-example-site-mentioned-in-the-conversation",
+      "featureTitle": "Add an in-app, English-language help section that explains how to get a usable Android APK from the deployed web app by wrapping the site URL in a WebView using a website-to-APK generator (include the steps and the example site mentioned in the conversation).",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/features/help/AndroidApkHelp.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-14"
+      ],
+      "confidence": "high"
+    }
+  ]
+}
