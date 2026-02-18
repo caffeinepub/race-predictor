@@ -7,13 +7,14 @@ import { EntryFlow } from '@/features/entries/EntryFlow';
 import { HistoryList } from '@/features/history/HistoryList';
 import { StatsAnalyticsView } from '@/features/analytics/StatsAnalyticsView';
 import { DashboardView } from '@/features/dashboard/DashboardView';
+import { InfoDashboardView } from '@/features/dashboard/InfoDashboardView';
 import { useOnDeviceMemory } from '@/storage/useOnDeviceMemory';
 import { Toaster } from '@/components/ui/sonner';
 import { SiCaffeine } from 'react-icons/si';
 
 function App() {
     const { entries, learnedState, isLoading, addEntry, setStrategy, clearMemory } = useOnDeviceMemory();
-    const [activeTab, setActiveTab] = useState('dashboard');
+    const [activeTab, setActiveTab] = useState('info');
 
     if (isLoading) {
         return (
@@ -47,12 +48,21 @@ function App() {
                 <main id="main-content" className="pb-20">
                     <MobilePageContainer>
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                            <TabsList className="grid w-full grid-cols-4 mb-6">
+                            <TabsList className="grid w-full grid-cols-5 mb-6">
+                                <TabsTrigger value="info">Info</TabsTrigger>
                                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                                 <TabsTrigger value="entry">New Entry</TabsTrigger>
                                 <TabsTrigger value="stats">Stats</TabsTrigger>
                                 <TabsTrigger value="history">History</TabsTrigger>
                             </TabsList>
+
+                            <TabsContent value="info">
+                                <InfoDashboardView 
+                                    entries={entries}
+                                    learnedState={learnedState}
+                                    onReset={clearMemory}
+                                />
+                            </TabsContent>
 
                             <TabsContent value="dashboard">
                                 <DashboardView 

@@ -1,81 +1,63 @@
-export interface BetSizeRecommendation {
+interface BetSizeRecommendation {
     amount: number;
     explanation: string;
 }
 
+const MIN_BET = 0;
+const MAX_BET = 10000;
+const BANKROLL = 10000;
+
 export function calculateBetSize(
-    predictedProbability: number,
+    confidence: number,
     impliedProbability: number,
-    bankroll: number = 100,
-    skipMode: boolean = false,
+    baseAmount: number,
+    skipRace: boolean,
     signalAgreement: number = 1.0
 ): BetSizeRecommendation {
-    // If skip mode is active, recommend $0
-    if (skipMode) {
+    // If skip race is recommended, suggest $0
+    if (skipRace) {
         return {
             amount: 0,
-            explanation: 'No value edge detected. Model recommends skipping this race.'
+            explanation: 'Skip this race - conditions are not favorable for betting'
         };
     }
 
     // Calculate edge
-    const edge = predictedProbability - impliedProbability;
+    const edge = confidence - impliedProbability;
 
-    // If no edge or negative edge, recommend $0
+    // If no edge or negative edge, suggest $0
     if (edge <= 0) {
         return {
             amount: 0,
-            explanation: 'No positive edge detected. Odds do not favor this bet.'
+            explanation: 'No betting edge detected - the odds do not favor a bet'
         };
     }
 
-    // Kelly Criterion: f = (bp - q) / b
-    // where b = decimal odds - 1, p = win probability, q = 1 - p
-    const decimalOdds = 1 / impliedProbability;
-    const b = decimalOdds - 1;
-    const p = predictedProbability;
-    const q = 1 - p;
-
-    let kellyFraction = (b * p - q) / b;
-
-    // Apply fractional Kelly (25% of full Kelly for safety)
-    kellyFraction = kellyFraction * 0.25;
+    // Fractional Kelly Criterion (use 25% of Kelly for safety)
+    const kellyFraction = 0.25;
+    const kellyBet = (edge / (1 - confidence)) * BANKROLL * kellyFraction;
 
     // Adjust for signal agreement
-    if (signalAgreement < 0.4) {
-        kellyFraction *= 0.5; // Reduce bet size by 50% when signals are mixed
-    } else if (signalAgreement < 0.6) {
-        kellyFraction *= 0.7; // Reduce bet size by 30% when signals are moderate
-    }
+    let adjustedBet = kellyBet * signalAgreement;
 
-    // Calculate bet amount
-    let betAmount = Math.max(0, kellyFraction * bankroll);
+    // Apply bounds
+    adjustedBet = Math.max(MIN_BET, Math.min(MAX_BET, adjustedBet));
 
-    // Cap at reasonable limits
-    betAmount = Math.min(betAmount, bankroll * 0.1); // Never bet more than 10% of bankroll
-    betAmount = Math.min(betAmount, 10000); // Hard cap at $10,000
-
-    // Round to nearest dollar
-    betAmount = Math.round(betAmount);
+    // Round to nearest 100
+    const roundedBet = Math.round(adjustedBet / 100) * 100;
 
     // Generate explanation
     let explanation = '';
-    if (betAmount === 0) {
-        explanation = 'Edge is too small to justify a bet. Consider skipping.';
-    } else if (betAmount < 10) {
-        explanation = `Small edge detected (${(edge * 100).toFixed(1)}%). Conservative bet recommended.`;
-    } else if (betAmount < 50) {
-        explanation = `Moderate edge detected (${(edge * 100).toFixed(1)}%). Standard bet size.`;
+    if (roundedBet === 0) {
+        explanation = 'No bet recommended - edge is too small or signals are uncertain';
+    } else if (signalAgreement < 0.8) {
+        explanation = `Reduced bet due to mixed signals. Original Kelly: $${Math.round(kellyBet)}, adjusted to $${roundedBet}`;
     } else {
-        explanation = `Strong edge detected (${(edge * 100).toFixed(1)}%). Larger bet justified.`;
-    }
-
-    if (signalAgreement < 0.4) {
-        explanation += ' Bet reduced due to mixed signals.';
+        explanation = `Kelly Criterion suggests $${roundedBet} based on ${(edge * 100).toFixed(1)}% edge and ${(confidence * 100).toFixed(1)}% confidence`;
     }
 
     return {
-        amount: betAmount,
+        amount: roundedBet,
         explanation
     };
 }

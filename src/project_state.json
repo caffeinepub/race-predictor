@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 39,
+  "projectStateVersion": 47,
   "summary": "Odds storage must include both numerator and denominator (or decimal form) so 5/1 vs 5/2 are not conflated. Store computed implied probability with each race. Prediction output must include value edge (predictedProb – impliedProb) for betting decisions. Update bet sizing to factor in edge + variance, not just raw probability. Model weight updates should be driven by log-loss, not arbitrary Bayesian vibes. Add session window (e.g., last 50 races) for recency-weighted stats blended with lifetime stats. Store predicted probabilities per race for real calibration tracking. Ensure contender identity (name or number) is stored separately from lane/slot index. Cache computed contender stats on-device for fast load times.",
   "architectural_notes": [
     "Use on-device persistent storage (e.g., AsyncStorage) for races/history and learned parameters.",
@@ -15,7 +15,7 @@
     "Remove horse names from the saved race model and UI if they are not used by prediction."
   ],
   "known_issues": [],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-make-the-app-usable-on-android-via-a-mobile-first-responsive-web-ui-touch-friendly-controls-readable-typography-and-layouts-that-work-well-on-small-screens",
@@ -477,9 +477,10 @@
       "id": "feature-update-the-bet-amount-constraints-in-the-new-entry-flow-to-support-a-minimum-bet-of-0-instead-of-100-and-a-maximum-bet-of-10-000-and-replace-the-fixed-increment-dropdown-with-a-custom-numeric-input-field-that-allows-users-to-enter-any-value-within-the-valid-range",
       "title": "Update the bet amount constraints in the New Entry flow to support a minimum bet of 0 (instead of 100) and a maximum bet of 10,000, and replace the fixed increment dropdown with a custom numeric input field that allows users to enter any value within the valid range.",
       "reqIds": [
-        "REQ-58"
+        "REQ-58",
+        "REQ-78"
       ],
-      "version": 1
+      "version": 2
     },
     {
       "id": "feature-update-the-bet-sizing-algorithm-logic-to-account-for-the-new-minimum-bet-constraint-of-0-ensuring-that-when-the-model-recommends-do-not-bet-or-detects-unfavorable-conditions-it-can-suggest-a-bet-amount-of-0-instead-of-being-forced-to-recommend-at-least-100",
@@ -582,6 +583,158 @@
       "title": "Position a non-editable '/1' label immediately to the right of each odds numerator input field in the New Entry flow to visually represent the fractional format with a fixed denominator of 1.",
       "reqIds": [
         "REQ-71"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-revert-the-odds-numerator-input-field-placeholder-text-in-entryflow-tsx-from-0-back-to-its-previous-state-e-g-e-g-5-0-or-similar-non-zero-example-text",
+      "title": "Revert the odds numerator input field placeholder text in EntryFlow.tsx from '0' back to its previous state (e.g., 'e.g., 5.0' or similar non-zero example text).",
+      "reqIds": [
+        "REQ-72"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-the-non-editable-1-label-positioned-immediately-to-the-right-of-each-odds-numerator-input-field-in-entryflow-tsx-restoring-the-previous-odds-input-ui-layout-from-version-17",
+      "title": "Remove the non-editable '/1' label positioned immediately to the right of each odds numerator input field in EntryFlow.tsx, restoring the previous odds input UI layout from version 17.",
+      "reqIds": [
+        "REQ-73"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-odds-numerator-input-field-in-entryflow-tsx-so-the-placeholder-text-displays-o-capital-letter-o-not-zero-when-the-field-is-empty-replacing-any-existing-placeholder-text",
+      "title": "Update the odds numerator input field in EntryFlow.tsx so the placeholder text displays 'O' (capital letter O, not zero) when the field is empty, replacing any existing placeholder text.",
+      "reqIds": [
+        "REQ-74"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-position-a-non-editable-1-label-immediately-to-the-right-of-each-odds-numerator-input-field-in-entryflow-tsx-to-visually-represent-the-fractional-format-with-a-fixed-denominator-of-1",
+      "title": "Position a non-editable '/1' label immediately to the right of each odds numerator input field in EntryFlow.tsx to visually represent the fractional format with a fixed denominator of 1.",
+      "reqIds": [
+        "REQ-75"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-new-main-dashboard-info-page-accessible-via-the-existing-tab-navigation-that-displays-key-performance-counters-total-races-run-count-of-saved-race-entries-prediction-accuracy-percentage-overall-model-accuracy-from-history-and-roi-return-on-investment-from-betting-performance-tracking",
+      "title": "Create a new main dashboard info page accessible via the existing tab navigation that displays key performance counters: Total Races Run (count of saved race entries), Prediction Accuracy percentage (overall model accuracy from history), and ROI (return on investment from betting performance tracking).",
+      "reqIds": [
+        "REQ-76"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enhance-the-main-dashboard-info-page-with-additional-useful-user-friendly-features-that-improve-the-overall-app-experience-such-as-quick-access-to-reset-app-memory-visual-summary-of-strategy-profile-performance-recent-race-outcomes-summary-or-model-mood-confidence-trend-indicators",
+      "title": "Enhance the main dashboard info page with additional useful user-friendly features that improve the overall app experience, such as: quick access to reset app memory, visual summary of strategy profile performance, recent race outcomes summary, or model mood/confidence trend indicators.",
+      "reqIds": [
+        "REQ-77"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-bet-sizing-algorithm-logic-in-betsizing-ts-to-account-for-the-new-minimum-bet-constraint-of-0-ensuring-that-when-the-model-recommends-do-not-bet-or-detects-unfavorable-conditions-it-can-suggest-a-bet-amount-of-0-instead-of-being-forced-to-recommend-at-least-100",
+      "title": "Update the bet sizing algorithm logic in betSizing.ts to account for the new minimum bet constraint of 0, ensuring that when the model recommends 'Do Not Bet' or detects unfavorable conditions, it can suggest a bet amount of 0 instead of being forced to recommend at least 100.",
+      "reqIds": [
+        "REQ-79"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-streak-tracking-logic-in-localmemorystore-ts-to-differentiate-between-three-streak-types-win-streak-1st-place-finishes-only-placer-streak-2nd-or-3rd-place-finishes-and-lower-streak-4th-6th-place-finishes-store-and-maintain-these-three-separate-streak-counters-per-contender-in-the-on-device-learned-state",
+      "title": "Update the streak tracking logic in localMemoryStore.ts to differentiate between three streak types: Win Streak (1st place finishes only), Placer Streak (2nd or 3rd place finishes), and Lower Streak (4th-6th place finishes). Store and maintain these three separate streak counters per contender in the on-device learned state.",
+      "reqIds": [
+        "REQ-80"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-incorporate-all-three-streak-types-win-streak-placer-streak-lower-streak-as-weighted-signals-in-the-prediction-model-model-ts-alongside-existing-factors-market-odds-recent-form-history-stats-consistency-hot-streak-override-assign-appropriate-feature-weights-so-positive-streaks-win-placer-increase-predicted-probability-while-negative-streaks-lower-decrease-it",
+      "title": "Incorporate all three streak types (Win Streak, Placer Streak, Lower Streak) as weighted signals in the prediction model (model.ts) alongside existing factors (market odds, recent form, history stats, consistency, hot streak override). Assign appropriate feature weights so positive streaks (Win, Placer) increase predicted probability while negative streaks (Lower) decrease it.",
+      "reqIds": [
+        "REQ-81"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-stats-view-statsanalyticsview-tsx-to-display-all-three-streak-types-win-streak-placer-streak-lower-streak-for-each-contender-alongside-existing-win-place-show-percentages-and-recent-form-using-clear-english-labels-and-visual-indicators-emojis-or-color-coding-to-communicate-streak-strength",
+      "title": "Update the Stats view (StatsAnalyticsView.tsx) to display all three streak types (Win Streak, Placer Streak, Lower Streak) for each contender alongside existing Win/Place/Show percentages and recent form, using clear English labels and visual indicators (emojis or color coding) to communicate streak strength.",
+      "reqIds": [
+        "REQ-82"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enhance-the-hot-streak-override-logic-in-model-ts-to-apply-only-to-win-streaks-4-consecutive-1st-place-finishes-not-placer-streaks-or-lower-streaks-ensuring-that-the-temporary-probability-boost-is-reserved-for-contenders-with-sustained-winning-performance",
+      "title": "Enhance the Hot Streak Override logic in model.ts to apply only to Win Streaks (4+ consecutive 1st place finishes), not Placer Streaks or Lower Streaks, ensuring that the temporary probability boost is reserved for contenders with sustained winning performance.",
+      "reqIds": [
+        "REQ-83"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-explain-the-pick-breakdown-in-entryflow-tsx-to-include-the-three-new-streak-signal-contributions-win-streak-x-placer-streak-y-lower-streak-z-alongside-existing-signals-ensuring-the-breakdown-remains-scannable-and-does-not-overwhelm-users-with-too-many-metrics",
+      "title": "Update the Explain the Pick breakdown in EntryFlow.tsx to include the three new streak signal contributions (Win Streak: +X, Placer Streak: +Y, Lower Streak: -Z) alongside existing signals, ensuring the breakdown remains scannable and does not overwhelm users with too many metrics.",
+      "reqIds": [
+        "REQ-84"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-refine-the-log-loss-feedback-loop-in-localmemorystore-ts-to-increase-feature-weight-adaptation-rate-when-the-model-consistently-misses-predictions-and-decrease-adaptation-rate-when-predictions-are-accurate-allowing-the-model-to-converge-faster-on-optimal-weights-without-overshooting",
+      "title": "Refine the log-loss feedback loop in localMemoryStore.ts to increase feature weight adaptation rate when the model consistently misses predictions, and decrease adaptation rate when predictions are accurate, allowing the model to converge faster on optimal weights without overshooting.",
+      "reqIds": [
+        "REQ-85"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-odds-movement-detection-in-localmemorystore-ts-that-tracks-changes-in-odds-numerator-values-between-consecutive-races-for-the-same-contender-and-use-rising-odds-decreasing-confidence-from-the-market-as-a-negative-signal-and-falling-odds-increasing-market-confidence-as-a-positive-signal-in-the-prediction-model",
+      "title": "Add odds movement detection in localMemoryStore.ts that tracks changes in odds numerator values between consecutive races for the same contender, and use rising odds (decreasing confidence from the market) as a negative signal and falling odds (increasing market confidence) as a positive signal in the prediction model.",
+      "reqIds": [
+        "REQ-86"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-contender-momentum-scoring-in-localmemorystore-ts-that-weights-recent-race-outcomes-more-heavily-than-older-outcomes-exponential-decay-so-a-contender-s-recent-3-5-races-contribute-more-to-their-predicted-probability-than-races-from-10-races-ago-improving-responsiveness-to-form-changes",
+      "title": "Implement contender momentum scoring in localMemoryStore.ts that weights recent race outcomes more heavily than older outcomes (exponential decay), so a contender's recent 3-5 races contribute more to their predicted probability than races from 10+ races ago, improving responsiveness to form changes.",
+      "reqIds": [
+        "REQ-87"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-ensemble-diversity-scoring-in-model-ts-that-evaluates-how-much-the-various-signals-odds-streaks-form-consistency-agree-or-disagree-on-the-top-pick-when-signals-strongly-agree-increase-confidence-when-signals-diverge-reduce-confidence-and-flag-the-prediction-as-uncertain-in-the-ui",
+      "title": "Add ensemble diversity scoring in model.ts that evaluates how much the various signals (odds, streaks, form, consistency) agree or disagree on the top pick. When signals strongly agree, increase confidence; when signals diverge, reduce confidence and flag the prediction as uncertain in the UI.",
+      "reqIds": [
+        "REQ-88"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-the-dashboard-tab-from-the-navigation-in-app-tsx-eliminating-the-tab-ui-element-and-its-associated-route-so-users-cannot-access-dashboardview-tsx-from-the-tab-bar",
+      "title": "Remove the Dashboard tab from the navigation in App.tsx, eliminating the tab UI element and its associated route so users cannot access DashboardView.tsx from the tab bar.",
+      "reqIds": [
+        "REQ-89"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-info-tab-in-app-tsx-to-render-infodashboardview-tsx-instead-of-any-other-component-making-it-the-primary-dashboard-overview-screen",
+      "title": "Update the Info tab in App.tsx to render InfoDashboardView.tsx instead of any other component, making it the primary dashboard/overview screen.",
+      "reqIds": [
+        "REQ-90"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-preserve-all-existing-functionality-in-new-entry-stats-and-history-tabs-without-any-modifications-to-their-behavior-ui-or-data-flow",
+      "title": "Preserve all existing functionality in New Entry, Stats, and History tabs without any modifications to their behavior, UI, or data flow.",
+      "reqIds": [
+        "REQ-91"
       ],
       "version": 1
     }
@@ -813,6 +966,44 @@
       "id": "AR-40",
       "summary": "Differentiate streak tracking: Win streaks for 1st place only, separate placer streak for 2nd/3rd, lower-tier streak for 4th-6th, and incorporate all streak types into prediction model alongside other factors",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-37",
+      "summary": "Change odds input field placeholder to '0' when empty, and position non-editable '/1' label immediately to the right of the numerator input",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-38",
+      "summary": "Add a new main info page with counters for total races run, prediction accuracy, and ROI",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-39",
+      "summary": "Change bet amount constraints to 0 minimum and 10,000 maximum, and allow custom input (not just increments of 1,000)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-40",
+      "summary": "Differentiate streak tracking: Win streaks for 1st place only, separate placer streak for 2nd/3rd, lower-tier streak for 4th-6th, and incorporate all streak types into prediction model alongside other factors",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-41",
+      "summary": "Remove dashboard in favor of info screen (keep everything else identical)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-42",
+      "summary": "Deploy the current application state to the Internet Computer network, ensuring both the frontend assets and the backend canister compile and deploy successfully without errors.",
+      "reqIds": [
+        "REQ-92"
+      ],
       "status": "pending"
     }
   ],

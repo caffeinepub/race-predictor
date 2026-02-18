@@ -1,361 +1,214 @@
-import { type Contender, type StrategyProfile, type SignalContribution } from '@/features/entries/types';
-import { type LearnedState, type ContenderStats } from '@/storage/localMemoryStore';
-import { calculateImpliedProbability } from '@/lib/oddsFormat';
+import { type Contender } from '@/features/entries/types';
+import { type LearnedState } from '@/storage/localMemoryStore';
+import { type StrategyProfile, type SignalContribution } from '@/features/entries/types';
 
-export interface StrategyProfileConfig {
-    name: StrategyProfile;
-    oddsWeight: number;
-    historicalWinRateWeight: number;
-    recentFormWeight: number;
-    consistencyWeight: number;
-    winStreakWeight: number;
-    placerStreakWeight: number;
-    lowerStreakWeight: number;
-    momentumWeight: number;
-    oddsMovementWeight: number;
-    hotStreakBoost: number;
-    valueThreshold: number; // Minimum edge required to recommend bet
-}
-
-const STRATEGY_PROFILES: Record<StrategyProfile, StrategyProfileConfig> = {
-    Safe: {
-        name: 'Safe',
-        oddsWeight: 1.5,
-        historicalWinRateWeight: 0.8,
-        recentFormWeight: 0.4,
-        consistencyWeight: 0.6,
-        winStreakWeight: 0.3,
-        placerStreakWeight: 0.15,
-        lowerStreakWeight: -0.1,
-        momentumWeight: 0.4,
-        oddsMovementWeight: -0.2,
-        hotStreakBoost: 1.15,
-        valueThreshold: 0.15
-    },
-    Value: {
-        name: 'Value',
-        oddsWeight: 0.6,
-        historicalWinRateWeight: 1.2,
-        recentFormWeight: 0.8,
-        consistencyWeight: 0.3,
-        winStreakWeight: 0.5,
-        placerStreakWeight: 0.25,
-        lowerStreakWeight: -0.15,
-        momentumWeight: 0.7,
-        oddsMovementWeight: -0.4,
-        hotStreakBoost: 1.25,
-        valueThreshold: 0.20
-    },
-    Balanced: {
-        name: 'Balanced',
-        oddsWeight: 1.0,
-        historicalWinRateWeight: 0.7,
-        recentFormWeight: 0.5,
-        consistencyWeight: 0.4,
-        winStreakWeight: 0.4,
-        placerStreakWeight: 0.2,
-        lowerStreakWeight: -0.12,
-        momentumWeight: 0.5,
-        oddsMovementWeight: -0.3,
-        hotStreakBoost: 1.20,
-        valueThreshold: 0.10
-    },
-    Aggressive: {
-        name: 'Aggressive',
-        oddsWeight: 0.8,
-        historicalWinRateWeight: 0.5,
-        recentFormWeight: 1.0,
-        consistencyWeight: 0.2,
-        winStreakWeight: 0.6,
-        placerStreakWeight: 0.3,
-        lowerStreakWeight: -0.2,
-        momentumWeight: 0.9,
-        oddsMovementWeight: -0.5,
-        hotStreakBoost: 1.30,
-        valueThreshold: 0.05
-    }
-};
-
-export interface PredictionResult {
+interface PredictionResult {
     predictedWinner: string;
     confidence: number;
     probabilities: Record<string, number>;
     impliedProbabilities: Record<string, number>;
     skipRace: boolean;
     skipReason?: string;
+    signalAgreement?: number;
+    signalAgreementLabel?: string;
+    signalBreakdown?: SignalContribution[];
     hotStreakBoost?: {
         contenderId: string;
         streakLength: number;
         boostFactor: number;
     };
-    signalBreakdown?: SignalContribution[];
-    signalAgreement?: number;
-    signalAgreementLabel?: string;
+    uncertaintyFlag?: boolean;
 }
 
-function normalize(value: number, min: number = 0, max: number = 1): number {
-    if (max === min) return 0;
-    return Math.max(0, Math.min(1, (value - min) / (max - min)));
-}
-
-function computeSignalScore(
-    contender: Contender,
-    stats: ContenderStats | undefined,
-    profile: StrategyProfileConfig,
-    allStats: ContenderStats[]
-): { score: number; breakdown: SignalContribution[] } {
-    const breakdown: SignalContribution[] = [];
-    let totalScore = 0;
-
-    // Odds signal
-    const impliedProb = calculateImpliedProbability(contender.odds);
-    const oddsSignal = impliedProb * profile.oddsWeight;
-    totalScore += oddsSignal;
-    breakdown.push({ signal: 'Odds', value: oddsSignal });
-
-    if (!stats) {
-        return { score: totalScore, breakdown };
-    }
-
-    // Historical win rate signal
-    const winRate = stats.appearances > 0 ? stats.wins / stats.appearances : 0;
-    const winRateSignal = winRate * profile.historicalWinRateWeight;
-    totalScore += winRateSignal;
-    breakdown.push({ signal: 'Win Rate', value: winRateSignal });
-
-    // Recent form signal
-    const recentWins = stats.recentForm.filter(f => f.position === 1).length;
-    const recentFormScore = stats.recentForm.length > 0 ? recentWins / stats.recentForm.length : 0;
-    const recentFormSignal = recentFormScore * profile.recentFormWeight;
-    totalScore += recentFormSignal;
-    breakdown.push({ signal: 'Recent Form', value: recentFormSignal });
-
-    // Consistency signal
-    const podiumRate = stats.appearances > 0 
-        ? (stats.wins + stats.places + stats.shows) / stats.appearances 
-        : 0;
-    const consistencySignal = podiumRate * profile.consistencyWeight;
-    totalScore += consistencySignal;
-    breakdown.push({ signal: 'Consistency', value: consistencySignal });
-
-    // Win Streak signal
-    const normalizedWinStreak = normalize(stats.winStreak, 0, 10);
-    const winStreakSignal = normalizedWinStreak * profile.winStreakWeight;
-    totalScore += winStreakSignal;
-    if (stats.winStreak > 0) {
-        breakdown.push({ signal: `Win Streak (🔥${stats.winStreak})`, value: winStreakSignal });
-    }
-
-    // Placer Streak signal
-    const normalizedPlacerStreak = normalize(stats.placerStreak, 0, 10);
-    const placerStreakSignal = normalizedPlacerStreak * profile.placerStreakWeight;
-    totalScore += placerStreakSignal;
-    if (stats.placerStreak > 0) {
-        breakdown.push({ signal: `Placer Streak (📈${stats.placerStreak})`, value: placerStreakSignal });
-    }
-
-    // Lower Streak signal (negative)
-    const normalizedLowerStreak = normalize(stats.lowerStreak, 0, 10);
-    const lowerStreakSignal = normalizedLowerStreak * profile.lowerStreakWeight;
-    totalScore += lowerStreakSignal;
-    if (stats.lowerStreak > 0) {
-        breakdown.push({ signal: `Lower Streak (📉${stats.lowerStreak})`, value: lowerStreakSignal });
-    }
-
-    // Momentum signal
-    const momentumSignal = stats.momentumScore * profile.momentumWeight;
-    totalScore += momentumSignal;
-    breakdown.push({ signal: 'Momentum', value: momentumSignal });
-
-    // Odds Movement signal
-    if (stats.oddsMovement !== null) {
-        const oddsMovementSignal = stats.oddsMovement * profile.oddsMovementWeight;
-        totalScore += oddsMovementSignal;
-        const movementLabel = stats.oddsMovement > 0.05 ? '⬆️' : stats.oddsMovement < -0.05 ? '⬇️' : '➡️';
-        breakdown.push({ signal: `Odds Movement ${movementLabel}`, value: oddsMovementSignal });
-    }
-
-    return { score: totalScore, breakdown };
-}
-
-function calculateSignalAgreement(
-    contenders: Contender[],
-    learnedState: LearnedState
-): { agreement: number; label: string } {
-    // Calculate individual signal rankings
-    const signalRankings: Record<string, number[]> = {
-        odds: [],
-        winStreak: [],
-        momentum: [],
-        consistency: [],
-        oddsMovement: []
-    };
-
-    contenders.forEach((contender, index) => {
-        const contenderId = contender.contenderId || contender.number;
-        const stats = learnedState.contenderStats[contenderId];
-        
-        // Odds ranking
-        const impliedProb = calculateImpliedProbability(contender.odds);
-        signalRankings.odds.push(impliedProb);
-        
-        // Win streak ranking
-        signalRankings.winStreak.push(stats?.winStreak || 0);
-        
-        // Momentum ranking
-        signalRankings.momentum.push(stats?.momentumScore || 0);
-        
-        // Consistency ranking
-        const podiumRate = stats && stats.appearances > 0 
-            ? (stats.wins + stats.places + stats.shows) / stats.appearances 
-            : 0;
-        signalRankings.consistency.push(podiumRate);
-        
-        // Odds movement ranking (inverted - falling odds is good)
-        signalRankings.oddsMovement.push(-(stats?.oddsMovement || 0));
-    });
-
-    // Find top contender for each signal
-    const topContenders: number[] = [];
-    Object.values(signalRankings).forEach(rankings => {
-        const maxIndex = rankings.indexOf(Math.max(...rankings));
-        topContenders.push(maxIndex);
-    });
-
-    // Calculate agreement as percentage of signals agreeing on same contender
-    const mostCommonIndex = topContenders.sort((a, b) =>
-        topContenders.filter(v => v === a).length - topContenders.filter(v => v === b).length
-    ).pop() || 0;
-    
-    const agreementCount = topContenders.filter(i => i === mostCommonIndex).length;
-    const agreement = agreementCount / topContenders.length;
-
-    let label = 'Moderate';
-    if (agreement >= 0.7) label = 'High Agreement';
-    else if (agreement < 0.4) label = 'Mixed Signals';
-
-    return { agreement, label };
-}
+const HOT_STREAK_THRESHOLD = 4;
+const HOT_STREAK_BOOST = 1.3;
 
 export function predictWinner(
     contenders: Contender[],
     learnedState: LearnedState | null,
-    strategyProfile: StrategyProfile = 'Balanced'
+    strategy: StrategyProfile = 'Balanced'
 ): PredictionResult {
-    const profile = STRATEGY_PROFILES[strategyProfile];
-    
-    // Calculate implied probabilities from odds
     const impliedProbabilities: Record<string, number> = {};
+    const rawScores: Record<string, number> = {};
+    const signalContributions: Record<string, SignalContribution[]> = {};
+
+    // Calculate implied probabilities from odds
     contenders.forEach(c => {
-        impliedProbabilities[c.number] = calculateImpliedProbability(c.odds);
+        impliedProbabilities[c.number] = c.impliedProbability;
     });
 
-    // If no learned state, use odds-only prediction
-    if (!learnedState) {
-        const sortedByOdds = [...contenders].sort((a, b) => {
-            const aProb = calculateImpliedProbability(a.odds);
-            const bProb = calculateImpliedProbability(b.odds);
-            return bProb - aProb;
+    // Check for hot streak (Win Streak only)
+    let hotStreakBoost: PredictionResult['hotStreakBoost'] = undefined;
+    if (learnedState) {
+        contenders.forEach(c => {
+            const stats = learnedState.contenderStats[c.contenderId];
+            if (stats && stats.winStreak >= HOT_STREAK_THRESHOLD) {
+                hotStreakBoost = {
+                    contenderId: c.contenderId,
+                    streakLength: stats.winStreak,
+                    boostFactor: HOT_STREAK_BOOST
+                };
+            }
         });
-
-        const winner = sortedByOdds[0];
-        const winnerProb = calculateImpliedProbability(winner.odds);
-
-        return {
-            predictedWinner: winner.number,
-            confidence: winnerProb * 100,
-            probabilities: impliedProbabilities,
-            impliedProbabilities,
-            skipRace: false,
-            signalBreakdown: [{ signal: 'Odds', value: winnerProb }],
-            signalAgreement: 1.0,
-            signalAgreementLabel: 'High Agreement'
-        };
     }
 
-    // Collect stats for all contenders
-    const allStats: ContenderStats[] = contenders.map(c => {
-        const contenderId = c.contenderId || c.number;
-        return learnedState.contenderStats[contenderId] || {
-            wins: 0,
-            places: 0,
-            shows: 0,
-            appearances: 0,
-            recentForm: [],
-            winStreak: 0,
-            placerStreak: 0,
-            lowerStreak: 0,
-            lastOddsNumerator: null,
-            oddsMovement: null,
-            momentumScore: 0
-        };
-    });
+    // Calculate weighted scores for each contender
+    contenders.forEach(c => {
+        const signals: SignalContribution[] = [];
+        let score = 0;
 
-    // Compute signal scores for each contender
-    const scores: Array<{ contender: Contender; score: number; breakdown: SignalContribution[] }> = [];
-    
-    contenders.forEach(contender => {
-        const contenderId = contender.contenderId || contender.number;
-        const stats = learnedState.contenderStats[contenderId];
-        const { score, breakdown } = computeSignalScore(contender, stats, profile, allStats);
-        scores.push({ contender, score, breakdown });
-    });
+        // Odds signal (lower odds = higher probability)
+        const oddsSignal = (1 - c.impliedProbability) * 0.5;
+        const oddsWeight = learnedState?.signalWeights.oddsWeight || 1.0;
+        score += oddsSignal * oddsWeight;
+        signals.push({ signal: 'Odds', value: oddsSignal * oddsWeight });
 
-    // Check for hot streak (Win Streak >= 4)
-    let hotStreakBoost: PredictionResult['hotStreakBoost'] = undefined;
-    scores.forEach(s => {
-        const contenderId = s.contender.contenderId || s.contender.number;
-        const stats = learnedState.contenderStats[contenderId];
-        if (stats && stats.winStreak >= 4) {
-            s.score *= profile.hotStreakBoost;
-            hotStreakBoost = {
-                contenderId,
-                streakLength: stats.winStreak,
-                boostFactor: profile.hotStreakBoost
-            };
+        if (learnedState) {
+            const stats = learnedState.contenderStats[c.contenderId];
+            
+            if (stats) {
+                // Historical win rate
+                const winRate = stats.appearances > 0 ? stats.wins / stats.appearances : 0;
+                const winRateSignal = winRate * 0.3;
+                const winRateWeight = learnedState.signalWeights.historicalWinRateWeight || 0.8;
+                score += winRateSignal * winRateWeight;
+                signals.push({ signal: 'Win Rate', value: winRateSignal * winRateWeight });
+
+                // Recent form
+                const recentFormScore = stats.recentForm.length > 0
+                    ? stats.recentForm.reduce((sum, f) => sum + (f.position === 1 ? 0.3 : f.position <= 3 ? 0.15 : 0), 0) / stats.recentForm.length
+                    : 0;
+                const formWeight = learnedState.signalWeights.recentFormWeight || 1.2;
+                score += recentFormScore * formWeight;
+                signals.push({ signal: 'Recent Form', value: recentFormScore * formWeight });
+
+                // Win Streak (1st place only)
+                const winStreakSignal = stats.winStreak * 0.05;
+                const winStreakWeight = learnedState.signalWeights.winStreakWeight || 0.8;
+                score += winStreakSignal * winStreakWeight;
+                signals.push({ signal: 'Win Streak', value: winStreakSignal * winStreakWeight });
+
+                // Placer Streak (2nd-3rd place)
+                const placerStreakSignal = stats.placerStreak * 0.03;
+                const placerStreakWeight = learnedState.signalWeights.placerStreakWeight || 0.5;
+                score += placerStreakSignal * placerStreakWeight;
+                signals.push({ signal: 'Placer Streak', value: placerStreakSignal * placerStreakWeight });
+
+                // Lower Streak (4th-6th place) - negative signal
+                const lowerStreakSignal = stats.lowerStreak * -0.04;
+                const lowerStreakWeight = learnedState.signalWeights.lowerStreakWeight || -0.3;
+                score += lowerStreakSignal * lowerStreakWeight;
+                signals.push({ signal: 'Lower Streak', value: lowerStreakSignal * lowerStreakWeight });
+
+                // Odds Movement
+                if (stats.oddsMovement !== null) {
+                    // Falling odds (negative movement) = positive signal
+                    // Rising odds (positive movement) = negative signal
+                    const oddsMovementSignal = -stats.oddsMovement * 0.1;
+                    const oddsMovementWeight = learnedState.signalWeights.oddsMovementWeight || 0.4;
+                    score += oddsMovementSignal * oddsMovementWeight;
+                    signals.push({ signal: 'Odds Movement', value: oddsMovementSignal * oddsMovementWeight });
+                }
+
+                // Momentum Score
+                const momentumSignal = stats.momentumScore * 0.2;
+                const momentumWeight = learnedState.signalWeights.momentumWeight || 0.9;
+                score += momentumSignal * momentumWeight;
+                signals.push({ signal: 'Momentum', value: momentumSignal * momentumWeight });
+
+                // Hot streak boost (Win Streak >= 4)
+                if (hotStreakBoost && hotStreakBoost.contenderId === c.contenderId) {
+                    score *= hotStreakBoost.boostFactor;
+                }
+            }
         }
+
+        rawScores[c.number] = score;
+        signalContributions[c.number] = signals;
     });
 
-    // Sort by score
-    scores.sort((a, b) => b.score - a.score);
+    // Apply strategy adjustments
+    const strategyMultipliers: Record<StrategyProfile, { favorite: number; underdog: number }> = {
+        'Aggressive': { favorite: 0.8, underdog: 1.3 },
+        'Balanced': { favorite: 1.0, underdog: 1.0 },
+        'Conservative': { favorite: 1.2, underdog: 0.8 }
+    };
 
-    // Convert scores to probabilities using softmax
-    const maxScore = Math.max(...scores.map(s => s.score));
-    const expScores = scores.map(s => Math.exp(s.score - maxScore));
-    const sumExpScores = expScores.reduce((a, b) => a + b, 0);
-    
+    const multipliers = strategyMultipliers[strategy];
+    Object.keys(rawScores).forEach(num => {
+        const isFavorite = impliedProbabilities[num] > 0.25;
+        rawScores[num] *= isFavorite ? multipliers.favorite : multipliers.underdog;
+    });
+
+    // Normalize to probabilities
+    const totalScore = Object.values(rawScores).reduce((sum, s) => sum + Math.max(0, s), 0);
     const probabilities: Record<string, number> = {};
-    scores.forEach((s, i) => {
-        probabilities[s.contender.number] = expScores[i] / sumExpScores;
-    });
+    
+    if (totalScore > 0) {
+        Object.keys(rawScores).forEach(num => {
+            probabilities[num] = Math.max(0, rawScores[num]) / totalScore;
+        });
+    } else {
+        // Fallback to implied probabilities
+        contenders.forEach(c => {
+            probabilities[c.number] = c.impliedProbability;
+        });
+    }
 
-    const winner = scores[0].contender;
-    const winnerProb = probabilities[winner.number];
-    const winnerImpliedProb = impliedProbabilities[winner.number];
+    // Find predicted winner
+    const predictedWinner = Object.entries(probabilities)
+        .sort(([, a], [, b]) => b - a)[0][0];
 
-    // Calculate signal agreement
-    const { agreement, label } = calculateSignalAgreement(contenders, learnedState);
+    const confidence = probabilities[predictedWinner] * 100;
 
-    // Adjust confidence based on signal agreement
-    const adjustedConfidence = winnerProb * (0.7 + 0.3 * agreement);
+    // Calculate signal agreement (ensemble diversity)
+    const topContenderSignals = signalContributions[predictedWinner] || [];
+    const signalValues = topContenderSignals.map(s => s.value);
+    
+    let signalAgreement = 1.0;
+    let uncertaintyFlag = false;
+    
+    if (signalValues.length > 0) {
+        const mean = signalValues.reduce((a, b) => a + b, 0) / signalValues.length;
+        const variance = signalValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / signalValues.length;
+        const stdDev = Math.sqrt(variance);
+        
+        // High standard deviation = low agreement
+        if (stdDev > 0.15) {
+            signalAgreement = 0.5;
+            uncertaintyFlag = true;
+        } else if (stdDev > 0.08) {
+            signalAgreement = 0.75;
+        }
+    }
 
-    // Check if we should skip this race (no value edge)
-    const edge = winnerProb - winnerImpliedProb;
-    const skipRace = edge < profile.valueThreshold;
-    const skipReason = skipRace 
-        ? `No sufficient value edge detected (edge: ${(edge * 100).toFixed(1)}%, threshold: ${(profile.valueThreshold * 100).toFixed(1)}%)`
-        : undefined;
+    const signalAgreementLabel = signalAgreement >= 0.9 ? 'High Agreement' :
+                                 signalAgreement >= 0.7 ? 'Moderate Agreement' :
+                                 'Mixed Signals';
+
+    // Skip race logic
+    let skipRace = false;
+    let skipReason = '';
+
+    if (confidence < 25) {
+        skipRace = true;
+        skipReason = 'Low confidence prediction - no clear favorite';
+    } else if (signalAgreement < 0.7) {
+        skipRace = true;
+        skipReason = 'Signals are mixed - uncertain prediction';
+    }
 
     return {
-        predictedWinner: winner.number,
-        confidence: adjustedConfidence * 100,
+        predictedWinner,
+        confidence,
         probabilities,
         impliedProbabilities,
         skipRace,
-        skipReason,
+        skipReason: skipRace ? skipReason : undefined,
+        signalAgreement,
+        signalAgreementLabel,
+        signalBreakdown: signalContributions[predictedWinner],
         hotStreakBoost,
-        signalBreakdown: scores[0].breakdown,
-        signalAgreement: agreement,
-        signalAgreementLabel: label
+        uncertaintyFlag
     };
 }

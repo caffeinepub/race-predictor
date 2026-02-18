@@ -56,10 +56,38 @@ export function StatsAnalyticsView({ learnedState }: StatsAnalyticsViewProps) {
                     </div>
                     <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                            <span>Streak Weight</span>
-                            <span className="font-mono">{learnedState.signalWeights.streakWeight.toFixed(2)}</span>
+                            <span>Win Streak Weight</span>
+                            <span className="font-mono">{learnedState.signalWeights.winStreakWeight.toFixed(2)}</span>
                         </div>
-                        <Progress value={learnedState.signalWeights.streakWeight * 33} />
+                        <Progress value={learnedState.signalWeights.winStreakWeight * 33} />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span>Placer Streak Weight</span>
+                            <span className="font-mono">{learnedState.signalWeights.placerStreakWeight.toFixed(2)}</span>
+                        </div>
+                        <Progress value={learnedState.signalWeights.placerStreakWeight * 33} />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span>Lower Streak Weight</span>
+                            <span className="font-mono">{learnedState.signalWeights.lowerStreakWeight.toFixed(2)}</span>
+                        </div>
+                        <Progress value={Math.abs(learnedState.signalWeights.lowerStreakWeight) * 33} />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span>Odds Movement Weight</span>
+                            <span className="font-mono">{learnedState.signalWeights.oddsMovementWeight.toFixed(2)}</span>
+                        </div>
+                        <Progress value={learnedState.signalWeights.oddsMovementWeight * 33} />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span>Momentum Weight</span>
+                            <span className="font-mono">{learnedState.signalWeights.momentumWeight.toFixed(2)}</span>
+                        </div>
+                        <Progress value={learnedState.signalWeights.momentumWeight * 33} />
                     </div>
                     {learnedState.currentLogLoss > 0 && (
                         <div className="mt-4 pt-4 border-t">
@@ -156,10 +184,10 @@ export function StatsAnalyticsView({ learnedState }: StatsAnalyticsViewProps) {
                                                 Win: <StatusEmoji emoji="🔥" label="Win streak" /> {stats.winStreak}
                                             </span>
                                             <span>
-                                                Place: <StatusEmoji emoji="📈" label="Placer streak" /> {stats.placerStreak}
+                                                Placer: <StatusEmoji emoji="📈" label="Placer streak" /> {stats.placerStreak}
                                             </span>
                                             <span>
-                                                Low: <StatusEmoji emoji="📉" label="Lower streak" /> {stats.lowerStreak}
+                                                Lower: <StatusEmoji emoji="📉" label="Lower streak" /> {stats.lowerStreak}
                                             </span>
                                         </div>
                                     </div>

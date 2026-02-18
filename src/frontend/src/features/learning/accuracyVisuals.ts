@@ -5,6 +5,7 @@
 export interface AccuracyVisuals {
     color: string;
     emoji: string;
+    label: string;
 }
 
 /**
@@ -16,18 +17,26 @@ export function getAccuracyVisuals(accuracy: number): AccuracyVisuals {
 
     // Determine emoji based on accuracy ranges
     let emoji: string;
+    let label: string;
+    
     if (clampedAccuracy < 20) {
         emoji = '😰'; // Very low - distressed
+        label = 'Very low accuracy';
     } else if (clampedAccuracy < 40) {
         emoji = '😟'; // Low - worried
+        label = 'Low accuracy';
     } else if (clampedAccuracy < 60) {
         emoji = '😐'; // Medium - neutral
+        label = 'Medium accuracy';
     } else if (clampedAccuracy < 80) {
         emoji = '🙂'; // Good - slightly happy
+        label = 'Good accuracy';
     } else if (clampedAccuracy < 95) {
         emoji = '😊'; // Very good - happy
+        label = 'Very good accuracy';
     } else {
         emoji = '🎯'; // Excellent - target hit
+        label = 'Excellent accuracy';
     }
 
     // Calculate color: red (0%) → yellow (50%) → green (100%)
@@ -35,7 +44,7 @@ export function getAccuracyVisuals(accuracy: number): AccuracyVisuals {
     const hue = (clampedAccuracy / 100) * 120; // 0 to 120 degrees
     const color = `hsl(${hue}, 70%, 45%)`;
 
-    return { color, emoji };
+    return { color, emoji, label };
 }
 
 /**
@@ -61,21 +70,21 @@ export function getAccuracyLabel(accuracy: number): string {
 }
 
 /**
- * Returns emoji and label for ROI percentage
+ * Returns emoji, label, and color for ROI percentage
  */
-export function getROIVisuals(roi: number): { emoji: string; label: string } {
+export function getROIVisuals(roi: number): { emoji: string; label: string; color: string } {
     if (roi >= 50) {
-        return { emoji: '🚀', label: 'Exceptional ROI' };
+        return { emoji: '🚀', label: 'Exceptional ROI', color: 'text-green-600 dark:text-green-400' };
     } else if (roi >= 20) {
-        return { emoji: '💰', label: 'Strong positive ROI' };
+        return { emoji: '💰', label: 'Strong positive ROI', color: 'text-green-600 dark:text-green-400' };
     } else if (roi >= 5) {
-        return { emoji: '📈', label: 'Positive ROI' };
+        return { emoji: '📈', label: 'Positive ROI', color: 'text-green-600 dark:text-green-400' };
     } else if (roi >= -5) {
-        return { emoji: '➖', label: 'Neutral ROI' };
+        return { emoji: '➖', label: 'Neutral ROI', color: 'text-muted-foreground' };
     } else if (roi >= -20) {
-        return { emoji: '📉', label: 'Negative ROI' };
+        return { emoji: '📉', label: 'Negative ROI', color: 'text-red-600 dark:text-red-400' };
     } else {
-        return { emoji: '💸', label: 'Poor ROI' };
+        return { emoji: '💸', label: 'Poor ROI', color: 'text-red-600 dark:text-red-400' };
     }
 }
 

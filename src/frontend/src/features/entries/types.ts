@@ -1,38 +1,15 @@
-export interface RaceEntry {
-    id: string;
-    timestamp: number;
-    contenders: Contender[];
-    predictedWinner: string;
-    actualWinner: string;
-    confidence: number;
-    // Podium finish order (top 3 only)
-    firstPlace?: string;
-    secondPlace?: string;
-    thirdPlace?: string;
-    // Legacy: Podium margins (optional, for backward compatibility with older entries)
-    firstPlaceMargin?: number;
-    secondPlaceMargin?: number;
-    thirdPlaceMargin?: number;
-    // Enhanced tracking
-    impliedProbabilities?: Record<string, number>;
-    predictedProbabilities?: Record<string, number>;
-    actualResults?: Record<string, number>; // 1 for win, 0 for loss
-    strategyId?: string;
-    betDetails?: BetDetails;
+export interface OddsData {
+    numerator: number;
+    denominator: number;
+    decimal?: number;
 }
 
 export interface Contender {
     number: string;
-    contenderId?: string; // Identity of the horse (name or ID)
-    laneIndex?: number; // Starting position (1-6)
+    contenderId: string;
+    laneIndex: number;
     odds: OddsData;
-    impliedProbability?: number;
-}
-
-export interface OddsData {
-    numerator: number;
-    denominator: number;
-    decimal?: number; // Cached decimal representation
+    impliedProbability: number;
 }
 
 export interface BetDetails {
@@ -42,14 +19,39 @@ export interface BetDetails {
     result: 'win' | 'loss';
 }
 
-export interface EntryFormData {
+export interface RaceEntry {
+    id: string;
+    timestamp: number;
     contenders: Contender[];
+    predictedWinner: string;
     actualWinner: string;
+    confidence: number;
+    firstPlace: string;
+    secondPlace?: string;
+    thirdPlace?: string;
+    impliedProbabilities: Record<string, number>;
+    predictedProbabilities: Record<string, number>;
+    actualResults: Record<string, number>;
+    strategyId?: StrategyProfile;
+    betDetails?: BetDetails;
 }
 
-export type StrategyProfile = 'Safe' | 'Value' | 'Balanced' | 'Aggressive';
+export type StrategyProfile = 'Aggressive' | 'Balanced' | 'Conservative';
 
 export interface SignalContribution {
     signal: string;
     value: number;
+}
+
+export interface ContenderStats {
+    appearances: number;
+    wins: number;
+    places: number;
+    shows: number;
+    winStreak: number;
+    placerStreak: number;
+    lowerStreak: number;
+    recentForm: Array<{ position: number; timestamp: number }>;
+    oddsMovement: number | null;
+    momentumScore: number;
 }

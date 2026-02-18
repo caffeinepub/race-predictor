@@ -1,54 +1,39 @@
 {
   "kind": "build_request",
-  "title": "Update odds input to fractional format with /1 denominator and 0 placeholder",
-  "priority": "normal",
+  "title": "Retry deployment after technical issue",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-70",
-      "text": "Update the odds numerator input field in the New Entry flow (EntryFlow.tsx) so the placeholder text displays '0' when the field is empty, replacing any existing placeholder text.",
-      "target": "frontend",
+      "id": "REQ-92",
+      "text": "Deploy the current application state to the Internet Computer network, ensuring both the frontend assets and the backend canister compile and deploy successfully without errors.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-user-final"
+          "msg-user-try-again"
         ],
         "quotes": [
-          "I need the odds to be fractional, 0 when unfilled"
+          "Try again"
         ]
       },
       "acceptanceCriteria": [
-        "The odds numerator input field shows '0' as placeholder text when empty",
-        "No other placeholder text (e.g., 'e.g., 5.0' or '-/1') is displayed in the input field",
-        "The placeholder disappears when the user begins typing"
-      ]
-    },
-    {
-      "id": "REQ-71",
-      "text": "Position a non-editable '/1' label immediately to the right of each odds numerator input field in the New Entry flow to visually represent the fractional format with a fixed denominator of 1.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-final"
-        ],
-        "quotes": [
-          "next to the box have /1"
-        ]
-      },
-      "acceptanceCriteria": [
-        "A non-editable '/1' label is rendered immediately adjacent to the right side of each odds numerator input field",
-        "The '/1' label is consistently positioned across all 6 contender rows",
-        "The label uses the same visual styling (font size, color, alignment) as the existing odds display pattern to maintain consistency"
+        "The backend canister (backend/main.mo) compiles without errors",
+        "The frontend build completes successfully",
+        "Both canisters are deployed to the Internet Computer network",
+        "The deployed application is accessible via its canister URL",
+        "No deployment errors or technical snafus occur"
       ]
     }
   ],
   "constraints": [
-    "Do not modify the existing odds storage model (numerator/denominator structure)",
-    "Do not change the validation logic for odds inputs",
-    "Maintain mobile-first responsive design and touch-friendly input sizing"
+    "Do not modify any application code or features",
+    "Do not change the backend schema or frontend UI",
+    "This is a deployment retry only, not a code change request"
   ],
   "nonGoals": [
-    "Changing how odds are stored in the data model",
-    "Modifying odds display format in History or Stats views",
-    "Updating odds parsing or conversion logic"
+    "Adding new features",
+    "Modifying existing functionality",
+    "Changing the visual theme or UI components",
+    "Updating data models or storage logic"
   ],
   "imageRequirements": {
     "required": [],

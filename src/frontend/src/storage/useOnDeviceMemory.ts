@@ -5,7 +5,6 @@ import {
     saveEntries,
     loadLearnedState,
     saveLearnedState,
-    computeLearnedState,
     calculateLearnedState,
     clearAllData,
     type LearnedState
@@ -21,8 +20,21 @@ export function useOnDeviceMemory() {
         const loadedEntries = loadEntries();
         const loadedState = loadLearnedState();
         
+        // If no learned state exists, compute it from entries
+        if (!loadedState && loadedEntries.length > 0) {
+            const computedState = calculateLearnedState(loadedEntries);
+            setLearnedState(computedState);
+            saveLearnedState(computedState);
+        } else if (!loadedState) {
+            // Initialize empty state
+            const emptyState = calculateLearnedState([]);
+            setLearnedState(emptyState);
+            saveLearnedState(emptyState);
+        } else {
+            setLearnedState(loadedState);
+        }
+        
         setEntries(loadedEntries);
-        setLearnedState(loadedState);
         setIsLoading(false);
     }, []);
 
@@ -31,16 +43,14 @@ export function useOnDeviceMemory() {
         setEntries(newEntries);
         saveEntries(newEntries);
         
-        // Update learned state incrementally
-        if (learnedState) {
-            const updatedState = calculateLearnedState(learnedState, entry);
-            setLearnedState(updatedState);
-            saveLearnedState(updatedState);
-        }
+        // Recalculate learned state with all entries
+        const updatedState = calculateLearnedState(newEntries, learnedState || undefined);
+        setLearnedState(updatedState);
+        saveLearnedState(updatedState);
     }, [entries, learnedState]);
 
     const recomputeLearnedState = useCallback(() => {
-        const newState = computeLearnedState(entries);
+        const newState = calculateLearnedState(entries);
         setLearnedState(newState);
         saveLearnedState(newState);
     }, [entries]);
@@ -48,7 +58,9 @@ export function useOnDeviceMemory() {
     const clearMemory = useCallback(() => {
         clearAllData();
         setEntries([]);
-        setLearnedState(loadLearnedState());
+        const emptyState = calculateLearnedState([]);
+        setLearnedState(emptyState);
+        saveLearnedState(emptyState);
     }, []);
     
     const setStrategy = useCallback((strategy: StrategyProfile) => {

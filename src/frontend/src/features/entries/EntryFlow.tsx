@@ -13,7 +13,7 @@ import { type LearnedState } from '@/storage/localMemoryStore';
 import { formatOdds, parseOddsInput, calculateImpliedProbability } from '@/lib/oddsFormat';
 import { calculateBetSize } from '@/lib/betSizing';
 import { StatusEmoji } from '@/components/StatusEmoji';
-import { AlertCircle, TrendingUp, TrendingDown, Target, Zap } from 'lucide-react';
+import { AlertCircle, TrendingUp, TrendingDown, Target, Zap, AlertTriangle } from 'lucide-react';
 
 interface EntryFlowProps {
     learnedState: LearnedState | null;
@@ -25,7 +25,6 @@ export function EntryFlow({ learnedState, onSubmit }: EntryFlowProps) {
     const [contenders, setContenders] = useState<Contender[]>([]);
     const [actualWinner, setActualWinner] = useState('');
     const [betAmount, setBetAmount] = useState<string>('');
-    const [customBetAmount, setCustomBetAmount] = useState<string>('');
     const [prediction, setPrediction] = useState<ReturnType<typeof predictWinner> | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -92,7 +91,7 @@ export function EntryFlow({ learnedState, onSubmit }: EntryFlowProps) {
     const handleBetSubmit = () => {
         if (!prediction) return;
 
-        const finalBetAmount = customBetAmount ? parseFloat(customBetAmount) : parseFloat(betAmount);
+        const finalBetAmount = parseFloat(betAmount);
         
         if (isNaN(finalBetAmount) || finalBetAmount < 0 || finalBetAmount > 10000) {
             setErrors({ bet: 'Bet amount must be between $0 and $10,000' });
@@ -141,7 +140,6 @@ export function EntryFlow({ learnedState, onSubmit }: EntryFlowProps) {
         setContenders([]);
         setActualWinner('');
         setBetAmount('');
-        setCustomBetAmount('');
         setPrediction(null);
         setErrors({});
     };
@@ -173,7 +171,6 @@ export function EntryFlow({ learnedState, onSubmit }: EntryFlowProps) {
         setContenders([]);
         setActualWinner('');
         setBetAmount('');
-        setCustomBetAmount('');
         setPrediction(null);
         setErrors({});
     };
@@ -184,7 +181,7 @@ export function EntryFlow({ learnedState, onSubmit }: EntryFlowProps) {
                 <CardHeader>
                     <CardTitle>Enter Race Odds</CardTitle>
                     <CardDescription>
-                        Enter fractional odds numerator for all 6 contenders (e.g., 5 for 5/1 odds)
+                        Enter the numerator for all 6 contenders (e.g., 5 for 5/1 odds)
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -195,10 +192,13 @@ export function EntryFlow({ learnedState, onSubmit }: EntryFlowProps) {
                                 <div className="flex items-center gap-2">
                                     <Input
                                         id={`odds-${num}`}
-                                        placeholder="0"
+                                        type="number"
+                                        min="0"
+                                        step="0.1"
+                                        placeholder="O"
                                         className={errors[`odds-${num}`] ? 'border-destructive' : ''}
                                     />
-                                    <span className="text-base font-medium text-muted-foreground whitespace-nowrap">/1</span>
+                                    <span className="text-lg font-medium text-muted-foreground">/1</span>
                                 </div>
                                 {errors[`odds-${num}`] && (
                                     <p className="text-sm text-destructive">{errors[`odds-${num}`]}</p>
@@ -235,6 +235,17 @@ export function EntryFlow({ learnedState, onSubmit }: EntryFlowProps) {
                             <AlertCircle className="h-4 w-4" />
                             <AlertDescription>
                                 <strong>Skip Recommendation:</strong> {prediction.skipReason}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
+                    {prediction.uncertaintyFlag && (
+                        <Alert variant="destructive">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertDescription>
+                                <strong>Signals Diverge - Uncertain Prediction</strong>
+                                <br />
+                                The prediction signals are not in agreement. Consider a lower bet or skip this race.
                             </AlertDescription>
                         </Alert>
                     )}
@@ -412,60 +423,46 @@ export function EntryFlow({ learnedState, onSubmit }: EntryFlowProps) {
                 <CardContent className="space-y-4">
                     <div className="p-4 bg-muted rounded-lg space-y-2">
                         <div className="flex justify-between">
-                            <span className="text-sm">Predicted:</span>
+                            <span className="text-sm font-medium">Predicted:</span>
                             <span className="font-semibold">Contender {prediction.predictedWinner}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-sm">Actual Winner:</span>
+                            <span className="text-sm font-medium">Actual Winner:</span>
                             <span className="font-semibold">Contender {actualWinner}</span>
                         </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Select Bet Amount</Label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {[0, 10, 25, 50, 100, suggestedBet.amount].map((amount) => (
-                                <Button
-                                    key={amount}
-                                    variant={betAmount === amount.toString() ? 'default' : 'outline'}
-                                    onClick={() => {
-                                        setBetAmount(amount.toString());
-                                        setCustomBetAmount('');
-                                    }}
-                                    className="w-full"
-                                >
-                                    ${amount.toFixed(0)}
-                                </Button>
-                            ))}
+                        <div className="flex justify-between">
+                            <span className="text-sm font-medium">Suggested Bet:</span>
+                            <span className="font-semibold">${suggestedBet.amount.toFixed(0)}</span>
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="custom-bet">Or Enter Custom Amount</Label>
+                        <Label htmlFor="betAmount">Bet Amount ($0 - $10,000)</Label>
                         <Input
-                            id="custom-bet"
+                            id="betAmount"
                             type="number"
                             min="0"
                             max="10000"
-                            placeholder="Enter amount"
-                            value={customBetAmount}
-                            onChange={(e) => {
-                                setCustomBetAmount(e.target.value);
-                                setBetAmount('');
-                            }}
+                            step="100"
+                            placeholder="Enter amount (0 for no bet)"
+                            value={betAmount}
+                            onChange={(e) => setBetAmount(e.target.value)}
                             className={errors.bet ? 'border-destructive' : ''}
                         />
                         {errors.bet && (
                             <p className="text-sm text-destructive">{errors.bet}</p>
                         )}
+                        <p className="text-xs text-muted-foreground">
+                            Enter 0 if you did not bet on this race
+                        </p>
                     </div>
 
                     <div className="flex gap-2">
-                        <Button onClick={handleSkipBet} variant="outline" className="flex-1">
-                            Skip Bet ($0)
-                        </Button>
                         <Button onClick={handleBetSubmit} className="flex-1">
                             Submit Entry
+                        </Button>
+                        <Button onClick={handleSkipBet} variant="outline" className="flex-1">
+                            Skip Bet
                         </Button>
                     </div>
                 </CardContent>

@@ -1,41 +1,4 @@
 {
   "kind": "feature_evidence_report",
-  "features": [
-    {
-      "featureId": "feature-update-the-odds-numerator-input-field-in-the-new-entry-flow-entryflow-tsx-so-the-placeholder-text-displays-0-when-the-field-is-empty-replacing-any-existing-placeholder-text",
-      "featureTitle": "Update the odds numerator input field in the New Entry flow (EntryFlow.tsx) so the placeholder text displays '0' when the field is empty, replacing any existing placeholder text.",
-      "files": [
-        "frontend/src/features/entries/EntryFlow.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-70"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-position-a-non-editable-1-label-immediately-to-the-right-of-each-odds-numerator-input-field-in-the-new-entry-flow-to-visually-represent-the-fractional-format-with-a-fixed-denominator-of-1",
-      "featureTitle": "Position a non-editable '/1' label immediately to the right of each odds numerator input field in the New Entry flow to visually represent the fractional format with a fixed denominator of 1.",
-      "files": [
-        "frontend/src/features/entries/EntryFlow.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-71"
-      ],
-      "confidence": "high"
-    }
-  ]
+  "features": []
 }
