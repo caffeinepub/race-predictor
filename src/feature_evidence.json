@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-extend-the-on-device-race-entry-model-to-support-horse-level-performance-tracking-win-place-show-rates-and-recent-form-including-storing-per-race-podium-positions-and-optional-podium-margin-fields-so-the-app-can-compute-last-5-recent-form-with-positions-and-margins",
-      "featureTitle": "Extend the on-device race entry model to support horse-level performance tracking (Win/Place/Show rates and recent form), including storing per-race podium positions and optional podium margin fields so the app can compute last-5 recent form with positions and margins.",
+      "featureId": "feature-update-the-odds-numerator-input-field-in-the-new-entry-flow-entryflow-tsx-so-the-placeholder-text-displays-0-when-the-field-is-empty-replacing-any-existing-placeholder-text",
+      "featureTitle": "Update the odds numerator input field in the New Entry flow (EntryFlow.tsx) so the placeholder text displays '0' when the field is empty, replacing any existing placeholder text.",
       "files": [
-        "frontend/src/features/entries/types.ts",
-        "frontend/src/storage/localMemoryStore.ts"
+        "frontend/src/features/entries/EntryFlow.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -16,16 +15,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-31"
+        "REQ-70"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-new-entry-flow-ui-to-capture-podium-margins-for-1st-2nd-and-3rd-using-clear-english-labels-validate-inputs-and-save-them-with-the-race-entry-without-changing-the-existing-top-3-podium-outcome-workflow",
-      "featureTitle": "Update the New Entry flow UI to capture podium margins (for 1st, 2nd, and 3rd) using clear English labels, validate inputs, and save them with the race entry without changing the existing top-3 (podium) outcome workflow.",
+      "featureId": "feature-position-a-non-editable-1-label-immediately-to-the-right-of-each-odds-numerator-input-field-in-the-new-entry-flow-to-visually-represent-the-fractional-format-with-a-fixed-denominator-of-1",
+      "featureTitle": "Position a non-editable '/1' label immediately to the right of each odds numerator input field in the New Entry flow to visually represent the fractional format with a fixed denominator of 1.",
       "files": [
-        "frontend/src/features/entries/EntryFlow.tsx",
-        "frontend/src/features/entries/validation.ts"
+        "frontend/src/features/entries/EntryFlow.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -35,105 +33,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-32"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-reintroduce-and-compute-horse-level-contender-number-level-stats-on-device-from-saved-history-including-win-place-show-and-recent-form-last-5-races-using-podium-position-plus-any-stored-podium-margins-and-expose-these-computed-stats-in-the-stats-view",
-      "featureTitle": "Reintroduce and compute horse-level (contender-number-level) stats on-device from saved history, including Win %, Place %, Show %, and Recent Form (last 5 races) using podium position plus any stored podium margins, and expose these computed stats in the Stats view.",
-      "files": [
-        "frontend/src/features/analytics/StatsAnalyticsView.tsx",
-        "frontend/src/storage/localMemoryStore.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-33"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-enhance-the-prediction-strategy-to-use-weighted-scoring-with-learnable-feature-weights-trust-factors-updating-the-weights-after-each-saved-race-using-a-continuous-feedback-loop-that-compares-implied-probabilities-vs-actual-outcomes-while-still-incorporating-market-odds-as-a-core-signal-ensemble-style-combination-of-multiple-signals",
-      "featureTitle": "Enhance the prediction strategy to use weighted scoring with learnable feature weights (“trust factors”), updating the weights after each saved race using a continuous feedback loop that compares implied probabilities vs actual outcomes, while still incorporating market odds as a core signal (ensemble-style combination of multiple signals).",
-      "files": [
-        "frontend/src/features/entries/EntryFlow.tsx",
-        "frontend/src/features/learning/model.ts",
-        "frontend/src/storage/localMemoryStore.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-34"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-streak-slump-and-variance-consistency-signals-based-on-saved-history-and-where-available-recorded-margins-and-incorporate-these-signals-into-a-confidence-calculation-and-b-stats-view-summaries-using-clear-english-labels",
-      "featureTitle": "Add streak/slump and variance/consistency signals based on saved history and (where available) recorded margins, and incorporate these signals into (a) confidence calculation and (b) Stats view summaries using clear English labels.",
-      "files": [
-        "frontend/src/features/analytics/StatsAnalyticsView.tsx",
-        "frontend/src/features/learning/model.ts",
-        "frontend/src/storage/localMemoryStore.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-35"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-bet-sizing-guidance-to-support-a-minimum-bet-of-100-and-a-maximum-bet-of-10-000-and-update-the-new-entry-flow-bet-amount-ui-and-validation-to-match-these-new-constraints-using-english-labels",
-      "featureTitle": "Update bet sizing guidance to support a minimum bet of 100 and a maximum bet of 10,000, and update the New Entry flow bet amount UI and validation to match these new constraints using English labels.",
-      "files": [
-        "frontend/src/features/entries/EntryFlow.tsx",
-        "frontend/src/lib/betSizing.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-36"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-on-device-storage-schema-version-handling-so-new-learned-state-fields-horse-level-stats-streak-variance-signals-and-feature-weights-trust-factors-can-be-added-without-breaking-existing-users-saved-data-and-recomputation-continues-to-work-after-upgrades",
-      "featureTitle": "Update on-device storage schema/version handling so new learned-state fields (horse-level stats, streak/variance signals, and feature weights/trust factors) can be added without breaking existing users’ saved data, and recomputation continues to work after upgrades.",
-      "files": [
-        "frontend/src/storage/localMemoryStore.ts",
-        "frontend/src/storage/storageKeys.ts",
-        "frontend/src/storage/useOnDeviceMemory.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-37"
+        "REQ-71"
       ],
       "confidence": "high"
     }

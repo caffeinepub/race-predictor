@@ -1,4 +1,5 @@
 import { type RaceEntry } from '@/features/entries/types';
+import { toDecimalOdds } from '@/lib/oddsFormat';
 
 export interface Metrics {
     totalRaces: number;
@@ -10,6 +11,20 @@ export interface Metrics {
     totalPayout: number;
     brierScore: number;
     strategyROI: Record<string, number>;
+}
+
+export interface ModelMood {
+    mood: 'High' | 'Medium' | 'Low';
+    confidence: number;
+    emoji: string;
+    color: string;
+    label: string;
+}
+
+export interface RNGTiltStatus {
+    isActive: boolean;
+    recentMissRate: number;
+    message?: string;
 }
 
 export function calculateMetrics(entries: RaceEntry[], totalBetAmount: number, totalPayout: number): Metrics {
@@ -68,7 +83,8 @@ export function calculateMetrics(entries: RaceEntry[], totalBetAmount: number, t
         if (entry.betDetails) {
             strategyStats[strategyId].betAmount += entry.betDetails.betAmount;
             if (entry.betDetails.result === 'win') {
-                const payout = entry.betDetails.betAmount * (entry.betDetails.oddsUsed + 1);
+                const decimalOdds = toDecimalOdds(entry.betDetails.oddsUsed);
+                const payout = entry.betDetails.betAmount * decimalOdds;
                 strategyStats[strategyId].payout += payout;
             }
         }
@@ -91,5 +107,105 @@ export function calculateMetrics(entries: RaceEntry[], totalBetAmount: number, t
         totalPayout,
         brierScore,
         strategyROI
+    };
+}
+
+export function calculateModelMood(entries: RaceEntry[]): ModelMood {
+    // Need at least 5 races to calculate mood
+    if (entries.length < 5) {
+        return {
+            mood: 'Medium',
+            confidence: 50,
+            emoji: '🤷',
+            color: 'text-muted-foreground',
+            label: 'Insufficient data'
+        };
+    }
+
+    // Use last 15-20 races for mood calculation
+    const recentWindow = Math.min(20, entries.length);
+    const recentEntries = entries.slice(-recentWindow);
+
+    // Calculate recent accuracy
+    const recentCorrect = recentEntries.filter(e => e.predictedWinner === e.actualWinner).length;
+    const recentAccuracy = (recentCorrect / recentEntries.length) * 100;
+
+    // Calculate recent calibration (Brier score)
+    let brierScore = 0;
+    let brierCount = 0;
+    recentEntries.forEach(entry => {
+        if (entry.predictedProbabilities && entry.actualResults) {
+            Object.keys(entry.predictedProbabilities).forEach(horseNum => {
+                const predictedProb = entry.predictedProbabilities![horseNum] || 0;
+                const actualOutcome = entry.actualResults![horseNum] || 0;
+                brierScore += Math.pow(predictedProb - actualOutcome, 2);
+                brierCount++;
+            });
+        }
+    });
+    const avgBrierScore = brierCount > 0 ? brierScore / brierCount : 0.5;
+    const calibrationScore = (1 - avgBrierScore) * 100; // Convert to 0-100 scale
+
+    // Combine accuracy and calibration for overall confidence
+    const overallConfidence = (recentAccuracy * 0.6 + calibrationScore * 0.4);
+
+    // Determine mood
+    let mood: 'High' | 'Medium' | 'Low';
+    let emoji: string;
+    let color: string;
+    let label: string;
+
+    if (overallConfidence >= 70) {
+        mood = 'High';
+        emoji = '🔥';
+        color = 'text-green-600 dark:text-green-400';
+        label = 'Model is performing well';
+    } else if (overallConfidence >= 50) {
+        mood = 'Medium';
+        emoji = '😐';
+        color = 'text-yellow-600 dark:text-yellow-400';
+        label = 'Model is performing adequately';
+    } else {
+        mood = 'Low';
+        emoji = '😰';
+        color = 'text-red-600 dark:text-red-400';
+        label = 'Model is struggling - proceed with caution';
+    }
+
+    return {
+        mood,
+        confidence: Math.round(overallConfidence),
+        emoji,
+        color,
+        label
+    };
+}
+
+export function detectRNGTilt(entries: RaceEntry[]): RNGTiltStatus {
+    // Need at least 5 races to detect tilt
+    if (entries.length < 5) {
+        return {
+            isActive: false,
+            recentMissRate: 0
+        };
+    }
+
+    // Check last 5-10 races
+    const tiltWindow = Math.min(10, entries.length);
+    const recentEntries = entries.slice(-tiltWindow);
+
+    const misses = recentEntries.filter(e => e.predictedWinner !== e.actualWinner).length;
+    const missRate = misses / recentEntries.length;
+
+    // Tilt threshold: 70%+ miss rate
+    const TILT_THRESHOLD = 0.70;
+    const isActive = missRate >= TILT_THRESHOLD;
+
+    return {
+        isActive,
+        recentMissRate: missRate * 100,
+        message: isActive 
+            ? `Pattern shift detected. Reducing bet size temporarily. (${Math.round(missRate * 100)}% miss rate in last ${tiltWindow} races)`
+            : undefined
     };
 }

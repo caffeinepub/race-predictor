@@ -1,76 +1,81 @@
-export interface BetSuggestion {
+export interface BetSizeRecommendation {
     amount: number;
     explanation: string;
 }
 
-/**
- * Calculate suggested bet size based on implied probability vs odds
- * Uses a simplified Kelly Criterion approach with conservative sizing
- * 
- * @param impliedProbability - Predicted win probability (0-100)
- * @param fractionalOdds - Fractional odds (e.g., 5 for 5/1)
- * @returns Suggested bet amount between 100-10000
- */
-export function calculateBetSize(impliedProbability: number, fractionalOdds: number): BetSuggestion {
-    // Convert to decimal probability
-    const p = impliedProbability / 100;
-    
-    // Convert fractional odds to decimal odds
-    const decimalOdds = fractionalOdds + 1;
-    
-    // Market implied probability from odds
-    const marketProb = 1 / decimalOdds;
-    
-    // Calculate edge (our probability - market probability)
-    const edge = p - marketProb;
-    
-    // Base bet sizing on edge and confidence
-    let betFraction = 0;
-    
-    if (edge > 0.2) {
-        // Strong edge: larger bet
-        betFraction = 0.9;
-    } else if (edge > 0.1) {
-        // Good edge: medium-high bet
-        betFraction = 0.7;
-    } else if (edge > 0.05) {
-        // Slight edge: medium bet
-        betFraction = 0.5;
-    } else if (edge > 0) {
-        // Minimal edge: smaller bet
-        betFraction = 0.3;
-    } else {
-        // No edge or negative edge: minimum bet
-        betFraction = 0.1;
+export function calculateBetSize(
+    predictedProbability: number,
+    impliedProbability: number,
+    bankroll: number = 100,
+    skipMode: boolean = false,
+    signalAgreement: number = 1.0
+): BetSizeRecommendation {
+    // If skip mode is active, recommend $0
+    if (skipMode) {
+        return {
+            amount: 0,
+            explanation: 'No value edge detected. Model recommends skipping this race.'
+        };
     }
-    
-    // Also factor in confidence level
-    if (impliedProbability > 70) {
-        betFraction *= 1.2;
-    } else if (impliedProbability < 40) {
-        betFraction *= 0.7;
+
+    // Calculate edge
+    const edge = predictedProbability - impliedProbability;
+
+    // If no edge or negative edge, recommend $0
+    if (edge <= 0) {
+        return {
+            amount: 0,
+            explanation: 'No positive edge detected. Odds do not favor this bet.'
+        };
     }
-    
-    // Calculate raw amount (scale 100-10000)
-    const rawAmount = 100 + (betFraction * 9900);
-    
-    // Round to nearest 100
-    const amount = Math.max(100, Math.min(10000, Math.round(rawAmount / 100) * 100));
-    
+
+    // Kelly Criterion: f = (bp - q) / b
+    // where b = decimal odds - 1, p = win probability, q = 1 - p
+    const decimalOdds = 1 / impliedProbability;
+    const b = decimalOdds - 1;
+    const p = predictedProbability;
+    const q = 1 - p;
+
+    let kellyFraction = (b * p - q) / b;
+
+    // Apply fractional Kelly (25% of full Kelly for safety)
+    kellyFraction = kellyFraction * 0.25;
+
+    // Adjust for signal agreement
+    if (signalAgreement < 0.4) {
+        kellyFraction *= 0.5; // Reduce bet size by 50% when signals are mixed
+    } else if (signalAgreement < 0.6) {
+        kellyFraction *= 0.7; // Reduce bet size by 30% when signals are moderate
+    }
+
+    // Calculate bet amount
+    let betAmount = Math.max(0, kellyFraction * bankroll);
+
+    // Cap at reasonable limits
+    betAmount = Math.min(betAmount, bankroll * 0.1); // Never bet more than 10% of bankroll
+    betAmount = Math.min(betAmount, 10000); // Hard cap at $10,000
+
+    // Round to nearest dollar
+    betAmount = Math.round(betAmount);
+
     // Generate explanation
     let explanation = '';
-    if (edge > 0.15) {
-        explanation = 'Strong value detected based on predicted probability vs odds';
-    } else if (edge > 0.05) {
-        explanation = 'Moderate value opportunity identified';
-    } else if (edge > 0) {
-        explanation = 'Slight edge detected, conservative sizing recommended';
+    if (betAmount === 0) {
+        explanation = 'Edge is too small to justify a bet. Consider skipping.';
+    } else if (betAmount < 10) {
+        explanation = `Small edge detected (${(edge * 100).toFixed(1)}%). Conservative bet recommended.`;
+    } else if (betAmount < 50) {
+        explanation = `Moderate edge detected (${(edge * 100).toFixed(1)}%). Standard bet size.`;
     } else {
-        explanation = 'Limited value detected, minimum bet suggested';
+        explanation = `Strong edge detected (${(edge * 100).toFixed(1)}%). Larger bet justified.`;
     }
-    
+
+    if (signalAgreement < 0.4) {
+        explanation += ' Bet reduced due to mixed signals.';
+    }
+
     return {
-        amount,
+        amount: betAmount,
         explanation
     };
 }

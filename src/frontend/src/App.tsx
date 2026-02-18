@@ -1,71 +1,95 @@
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AppHeader } from '@/components/AppHeader';
 import { MobilePageContainer } from '@/components/MobilePageContainer';
 import { SkipToContent } from '@/components/SkipToContent';
 import { EntryFlow } from '@/features/entries/EntryFlow';
 import { HistoryList } from '@/features/history/HistoryList';
-import { LearningSummaryCard } from '@/features/learning/LearningSummaryCard';
 import { StatsAnalyticsView } from '@/features/analytics/StatsAnalyticsView';
-import { ResetAppMemoryButton } from '@/features/reset/ResetAppMemoryButton';
+import { DashboardView } from '@/features/dashboard/DashboardView';
 import { useOnDeviceMemory } from '@/storage/useOnDeviceMemory';
 import { Toaster } from '@/components/ui/sonner';
+import { SiCaffeine } from 'react-icons/si';
 
-export default function App() {
-    const { entries, learnedState, addEntry, clearAll, recomputeLearnedState } = useOnDeviceMemory();
+function App() {
+    const { entries, learnedState, isLoading, addEntry, setStrategy, clearMemory } = useOnDeviceMemory();
+    const [activeTab, setActiveTab] = useState('dashboard');
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-4xl mb-4">🐎</div>
+                    <div className="text-muted-foreground">Loading...</div>
+                </div>
+            </div>
+        );
+    }
+
+    // Ensure learnedState is never null after loading
+    if (!learnedState) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-4xl mb-4">⚠️</div>
+                    <div className="text-muted-foreground">Error loading data</div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>
             <SkipToContent />
-            <div className="flex min-h-screen flex-col bg-background">
+            <div className="min-h-screen bg-background">
                 <AppHeader />
-                <main id="main-content" className="flex-1">
+                
+                <main id="main-content" className="pb-20">
                     <MobilePageContainer>
-                        <Tabs defaultValue="predict" className="w-full">
-                            <TabsList className="grid w-full grid-cols-3 mb-6">
-                                <TabsTrigger value="predict" className="text-sm">
-                                    New Entry
-                                </TabsTrigger>
-                                <TabsTrigger value="stats" className="text-sm">
-                                    Stats
-                                </TabsTrigger>
-                                <TabsTrigger value="history" className="text-sm">
-                                    History
-                                </TabsTrigger>
+                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                            <TabsList className="grid w-full grid-cols-4 mb-6">
+                                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                                <TabsTrigger value="entry">New Entry</TabsTrigger>
+                                <TabsTrigger value="stats">Stats</TabsTrigger>
+                                <TabsTrigger value="history">History</TabsTrigger>
                             </TabsList>
 
-                            <TabsContent value="predict" className="space-y-6">
-                                <LearningSummaryCard entries={entries} learnedState={learnedState} />
-                                <EntryFlow
-                                    onSave={(entry) => {
-                                        addEntry(entry);
-                                        recomputeLearnedState();
-                                    }}
+                            <TabsContent value="dashboard">
+                                <DashboardView 
+                                    entries={entries}
+                                    learnedState={learnedState}
+                                    onReset={clearMemory}
+                                />
+                            </TabsContent>
+
+                            <TabsContent value="entry" className="space-y-6">
+                                <EntryFlow 
+                                    onSubmit={addEntry} 
                                     learnedState={learnedState}
                                 />
                             </TabsContent>
 
-                            <TabsContent value="stats" className="space-y-6">
-                                <StatsAnalyticsView entries={entries} learnedState={learnedState} />
+                            <TabsContent value="stats">
+                                <StatsAnalyticsView 
+                                    learnedState={learnedState}
+                                />
                             </TabsContent>
 
-                            <TabsContent value="history" className="space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-2xl font-bold text-foreground">Race History</h2>
-                                    <ResetAppMemoryButton onReset={clearAll} />
-                                </div>
+                            <TabsContent value="history">
                                 <HistoryList entries={entries} />
                             </TabsContent>
                         </Tabs>
                     </MobilePageContainer>
                 </main>
-                <footer className="border-t border-border py-6 mt-12">
-                    <MobilePageContainer>
-                        <p className="text-center text-sm text-muted-foreground">
-                            © {new Date().getFullYear()} Built with ❤️ using{' '}
+
+                <footer className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t py-3">
+                    <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
+                        <p>
+                            © {new Date().getFullYear()} · Built with{' '}
+                            <SiCaffeine className="inline h-3 w-3 text-primary" aria-label="love" />{' '}
+                            using{' '}
                             <a
-                                href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(
-                                    typeof window !== 'undefined' ? window.location.hostname : 'gta-horse-track-guesser'
-                                )}`}
+                                href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="underline hover:text-foreground transition-colors"
@@ -73,10 +97,12 @@ export default function App() {
                                 caffeine.ai
                             </a>
                         </p>
-                    </MobilePageContainer>
+                    </div>
                 </footer>
             </div>
             <Toaster />
         </>
     );
 }
+
+export default App;

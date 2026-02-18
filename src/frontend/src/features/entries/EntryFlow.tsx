@@ -1,456 +1,477 @@
 import { useState } from 'react';
+import { type Contender, type RaceEntry, type StrategyProfile } from './types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, DollarSign, Target, Trophy } from 'lucide-react';
-import { type RaceEntry, type Contender, type BetDetails } from './types';
-import { validateContenders, validatePodium, validateMargins } from './validation';
-import { makePrediction, type PredictionResult } from '@/features/learning/model';
+import { Separator } from '@/components/ui/separator';
+import { validateOdds, validateWinner } from './validation';
+import { predictWinner } from '../learning/model';
 import { type LearnedState } from '@/storage/localMemoryStore';
+import { formatOdds, parseOddsInput, calculateImpliedProbability } from '@/lib/oddsFormat';
 import { calculateBetSize } from '@/lib/betSizing';
-import { toast } from 'sonner';
+import { StatusEmoji } from '@/components/StatusEmoji';
+import { AlertCircle, TrendingUp, TrendingDown, Target, Zap } from 'lucide-react';
 
 interface EntryFlowProps {
-    onSave: (entry: RaceEntry) => void;
-    learnedState: LearnedState;
+    learnedState: LearnedState | null;
+    onSubmit: (entry: RaceEntry) => void;
 }
 
-const FIXED_CONTENDERS = ['1', '2', '3', '4', '5', '6'];
+export function EntryFlow({ learnedState, onSubmit }: EntryFlowProps) {
+    const [step, setStep] = useState<'odds' | 'prediction' | 'result' | 'bet'>('odds');
+    const [contenders, setContenders] = useState<Contender[]>([]);
+    const [actualWinner, setActualWinner] = useState('');
+    const [betAmount, setBetAmount] = useState<string>('');
+    const [customBetAmount, setCustomBetAmount] = useState<string>('');
+    const [prediction, setPrediction] = useState<ReturnType<typeof predictWinner> | null>(null);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
-function getConfidenceColor(confidence: number): string {
-    if (confidence < 40) {
-        return 'bg-red-500';
-    } else if (confidence < 60) {
-        return 'bg-orange-500';
-    } else if (confidence < 75) {
-        return 'bg-yellow-500';
-    } else if (confidence < 85) {
-        return 'bg-lime-500';
-    } else {
-        return 'bg-green-500';
-    }
-}
+    const selectedStrategy: StrategyProfile = learnedState?.selectedStrategy || 'Balanced';
 
-function getConfidenceEmoji(confidence: number): string {
-    if (confidence < 40) {
-        return '😰';
-    } else if (confidence < 60) {
-        return '😕';
-    } else if (confidence < 75) {
-        return '😐';
-    } else if (confidence < 85) {
-        return '🙂';
-    } else {
-        return '😄';
-    }
-}
+    const handleOddsSubmit = () => {
+        const newErrors: Record<string, string> = {};
+        const newContenders: Contender[] = [];
 
-export function EntryFlow({ onSave, learnedState }: EntryFlowProps) {
-    const [step, setStep] = useState<'odds' | 'predict' | 'outcome'>('odds');
-    const [contenders, setContenders] = useState<Contender[]>(
-        FIXED_CONTENDERS.map(num => ({ number: num, odds: 0 }))
-    );
-    const [firstPlace, setFirstPlace] = useState('');
-    const [secondPlace, setSecondPlace] = useState('');
-    const [thirdPlace, setThirdPlace] = useState('');
-    const [firstPlaceMargin, setFirstPlaceMargin] = useState('');
-    const [secondPlaceMargin, setSecondPlaceMargin] = useState('');
-    const [thirdPlaceMargin, setThirdPlaceMargin] = useState('');
-    const [prediction, setPrediction] = useState<PredictionResult | null>(null);
-    const [betHorse, setBetHorse] = useState('');
-    const [betAmount, setBetAmount] = useState(5000);
-    const [errors, setErrors] = useState<string[]>([]);
+        for (let i = 1; i <= 6; i++) {
+            const oddsInput = (document.getElementById(`odds-${i}`) as HTMLInputElement)?.value;
+            
+            if (!oddsInput || oddsInput.trim() === '') {
+                newErrors[`odds-${i}`] = 'Required';
+                continue;
+            }
 
-    const updateContenderOdds = (index: number, value: string) => {
-        const updated = [...contenders];
-        updated[index].odds = parseFloat(value) || 0;
-        setContenders(updated);
-    };
+            const oddsData = parseOddsInput(oddsInput);
+            const validation = validateOdds(oddsData);
+            
+            if (!validation.valid) {
+                newErrors[`odds-${i}`] = validation.error || 'Invalid odds';
+                continue;
+            }
 
-    const handlePredict = () => {
-        const validation = validateContenders(contenders);
-        if (!validation.isValid) {
-            setErrors(validation.errors);
+            newContenders.push({
+                number: i.toString(),
+                contenderId: i.toString(),
+                laneIndex: i,
+                odds: oddsData,
+                impliedProbability: calculateImpliedProbability(oddsData)
+            });
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
-        setErrors([]);
-        const result = makePrediction(contenders, learnedState);
-        setPrediction(result);
-        setBetHorse(result.winner);
-        setStep('predict');
+        setContenders(newContenders);
+        setErrors({});
+
+        // Generate prediction
+        const predictionResult = predictWinner(newContenders, learnedState, selectedStrategy);
+        setPrediction(predictionResult);
+        setStep('prediction');
     };
 
-    const handleSave = () => {
-        const contenderValidation = validateContenders(contenders);
-        const podiumValidation = validatePodium(firstPlace, secondPlace, thirdPlace, contenders);
-        const marginValidation = validateMargins(firstPlaceMargin, secondPlaceMargin, thirdPlaceMargin);
+    const handlePredictionConfirm = () => {
+        setStep('result');
+    };
 
-        const allErrors = [
-            ...contenderValidation.errors,
-            ...podiumValidation.errors,
-            ...marginValidation.errors
-        ];
-
-        if (allErrors.length > 0) {
-            setErrors(allErrors);
+    const handleResultSubmit = () => {
+        const validation = validateWinner(actualWinner, contenders);
+        if (!validation.valid) {
+            setErrors({ winner: validation.error || 'Invalid winner' });
             return;
         }
 
-        // Prepare bet details
-        let betDetails: BetDetails | undefined;
-        if (betHorse && betAmount >= 100 && betAmount <= 10000) {
-            const betHorseOdds = contenders.find(c => c.number === betHorse)?.odds || 0;
-            betDetails = {
-                betHorseNumber: betHorse,
-                betAmount,
-                oddsUsed: betHorseOdds,
-                result: betHorse === firstPlace ? 'win' : 'loss'
-            };
+        setErrors({});
+        setStep('bet');
+    };
+
+    const handleBetSubmit = () => {
+        if (!prediction) return;
+
+        const finalBetAmount = customBetAmount ? parseFloat(customBetAmount) : parseFloat(betAmount);
+        
+        if (isNaN(finalBetAmount) || finalBetAmount < 0 || finalBetAmount > 10000) {
+            setErrors({ bet: 'Bet amount must be between $0 and $10,000' });
+            return;
         }
 
-        // Parse margins (optional)
-        const parsedFirstMargin = firstPlaceMargin ? parseFloat(firstPlaceMargin) : undefined;
-        const parsedSecondMargin = secondPlaceMargin ? parseFloat(secondPlaceMargin) : undefined;
-        const parsedThirdMargin = thirdPlaceMargin ? parseFloat(thirdPlaceMargin) : undefined;
+        const predictedContender = contenders.find(c => c.number === prediction.predictedWinner);
+        const actualContender = contenders.find(c => c.number === actualWinner);
+
+        if (!predictedContender || !actualContender) return;
+
+        // Determine podium positions
+        const firstPlace = actualWinner;
+        const secondPlace = undefined; // Not tracked in this flow
+        const thirdPlace = undefined;
 
         const entry: RaceEntry = {
-            id: Date.now().toString(),
+            id: `${Date.now()}-${Math.random()}`,
             timestamp: Date.now(),
-            contenders: contenders,
-            predictedWinner: prediction?.winner || '',
-            actualWinner: firstPlace,
-            confidence: prediction?.confidence || 0,
+            contenders,
+            predictedWinner: prediction.predictedWinner,
+            actualWinner,
+            confidence: prediction.confidence,
             firstPlace,
             secondPlace,
             thirdPlace,
-            firstPlaceMargin: parsedFirstMargin,
-            secondPlaceMargin: parsedSecondMargin,
-            thirdPlaceMargin: parsedThirdMargin,
-            impliedProbabilities: prediction?.impliedProbabilities,
-            strategyId: prediction?.strategyId,
-            betDetails
+            impliedProbabilities: prediction.impliedProbabilities,
+            predictedProbabilities: prediction.probabilities,
+            actualResults: contenders.reduce((acc, c) => {
+                acc[c.number] = c.number === actualWinner ? 1 : 0;
+                return acc;
+            }, {} as Record<string, number>),
+            strategyId: selectedStrategy,
+            betDetails: finalBetAmount > 0 ? {
+                betHorseNumber: prediction.predictedWinner,
+                betAmount: finalBetAmount,
+                oddsUsed: predictedContender.odds,
+                result: prediction.predictedWinner === actualWinner ? 'win' : 'loss'
+            } : undefined
         };
 
-        onSave(entry);
-        toast.success('Race entry saved successfully!');
+        onSubmit(entry);
 
         // Reset form
-        setContenders(FIXED_CONTENDERS.map(num => ({ number: num, odds: 0 })));
-        setFirstPlace('');
-        setSecondPlace('');
-        setThirdPlace('');
-        setFirstPlaceMargin('');
-        setSecondPlaceMargin('');
-        setThirdPlaceMargin('');
-        setPrediction(null);
-        setBetHorse('');
-        setBetAmount(5000);
-        setErrors([]);
         setStep('odds');
+        setContenders([]);
+        setActualWinner('');
+        setBetAmount('');
+        setCustomBetAmount('');
+        setPrediction(null);
+        setErrors({});
     };
 
-    const betSuggestion = prediction && betHorse ? 
-        calculateBetSize(prediction.impliedProbabilities[betHorse] || 0, contenders.find(c => c.number === betHorse)?.odds || 0) : 
-        null;
+    const handleSkipBet = () => {
+        if (!prediction) return;
 
-    return (
-        <div className="space-y-6">
-            {step === 'odds' && (
-                <>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Race Contenders</CardTitle>
-                            <CardDescription>Enter odds for contenders 1-6 (fractional format X/1)</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {contenders.map((contender, index) => (
-                                <div key={index} className="flex gap-3 items-center pb-3 border-b border-border last:border-0">
-                                    <div className="w-16 shrink-0">
-                                        <Badge variant="outline" className="text-base px-3 py-2 w-full justify-center">
-                                            #{contender.number}
-                                        </Badge>
-                                    </div>
-                                    <div className="flex-1">
-                                        <Label htmlFor={`odds-${index}`} className="text-xs text-muted-foreground">
-                                            Odds (X/1)
-                                        </Label>
-                                        <Input
-                                            id={`odds-${index}`}
-                                            type="number"
-                                            step="0.1"
-                                            min="0"
-                                            placeholder="e.g., 5.0"
-                                            value={contender.odds || ''}
-                                            onChange={(e) => updateContenderOdds(index, e.target.value)}
-                                            className="mt-1"
-                                        />
-                                    </div>
+        const entry: RaceEntry = {
+            id: `${Date.now()}-${Math.random()}`,
+            timestamp: Date.now(),
+            contenders,
+            predictedWinner: prediction.predictedWinner,
+            actualWinner,
+            confidence: prediction.confidence,
+            firstPlace: actualWinner,
+            impliedProbabilities: prediction.impliedProbabilities,
+            predictedProbabilities: prediction.probabilities,
+            actualResults: contenders.reduce((acc, c) => {
+                acc[c.number] = c.number === actualWinner ? 1 : 0;
+                return acc;
+            }, {} as Record<string, number>),
+            strategyId: selectedStrategy
+        };
+
+        onSubmit(entry);
+
+        // Reset form
+        setStep('odds');
+        setContenders([]);
+        setActualWinner('');
+        setBetAmount('');
+        setCustomBetAmount('');
+        setPrediction(null);
+        setErrors({});
+    };
+
+    if (step === 'odds') {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Enter Race Odds</CardTitle>
+                    <CardDescription>
+                        Enter fractional odds numerator for all 6 contenders (e.g., 5 for 5/1 odds)
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {[1, 2, 3, 4, 5, 6].map(num => (
+                            <div key={num} className="space-y-2">
+                                <Label htmlFor={`odds-${num}`}>Contender {num}</Label>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        id={`odds-${num}`}
+                                        placeholder="0"
+                                        className={errors[`odds-${num}`] ? 'border-destructive' : ''}
+                                    />
+                                    <span className="text-base font-medium text-muted-foreground whitespace-nowrap">/1</span>
                                 </div>
-                            ))}
-                        </CardContent>
-                    </Card>
+                                {errors[`odds-${num}`] && (
+                                    <p className="text-sm text-destructive">{errors[`odds-${num}`]}</p>
+                                )}
+                            </div>
+                        ))}
+                        <Button onClick={handleOddsSubmit} className="w-full">
+                            Generate Prediction
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
-                    {errors.length > 0 && (
-                        <Alert variant="destructive">
+    if (step === 'prediction' && prediction) {
+        const suggestedBet = calculateBetSize(
+            prediction.confidence / 100,
+            prediction.impliedProbabilities[prediction.predictedWinner],
+            100,
+            prediction.skipRace,
+            prediction.signalAgreement || 1.0
+        );
+
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Prediction Result</CardTitle>
+                    <CardDescription>Strategy: {selectedStrategy}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {prediction.skipRace && (
+                        <Alert>
+                            <AlertCircle className="h-4 w-4" />
                             <AlertDescription>
-                                <ul className="list-disc list-inside space-y-1">
-                                    {errors.map((error, idx) => (
-                                        <li key={idx}>{error}</li>
-                                    ))}
-                                </ul>
+                                <strong>Skip Recommendation:</strong> {prediction.skipReason}
                             </AlertDescription>
                         </Alert>
                     )}
 
-                    <Button onClick={handlePredict} className="w-full" size="lg">
-                        <TrendingUp className="mr-2 h-5 w-5" />
-                        Make Prediction
-                    </Button>
-                </>
-            )}
-
-            {step === 'predict' && prediction && (
-                <>
-                    <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Target className="h-5 w-5" />
-                                Prediction Result
-                            </CardTitle>
-                            <CardDescription>Adaptive prediction using odds, historical data, and learning</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="text-center py-4">
-                                <div className="text-sm text-muted-foreground mb-2">Predicted Winner</div>
-                                <div className="text-5xl font-bold mb-3">#{prediction.winner}</div>
-                                <div className="flex items-center justify-center gap-2">
-                                    <span className="text-2xl">{getConfidenceEmoji(prediction.confidence)}</span>
-                                    <Badge className={`${getConfidenceColor(prediction.confidence)} text-white text-base px-4 py-1`}>
-                                        {prediction.confidence}% Confidence
-                                    </Badge>
-                                </div>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">Predicted Winner</span>
+                            <Badge variant="default" className="text-lg px-4 py-1">
+                                Contender {prediction.predictedWinner}
+                            </Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">Confidence</span>
+                            <span className="text-2xl font-bold">{prediction.confidence.toFixed(1)}%</span>
+                        </div>
+                        {prediction.signalAgreementLabel && (
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">Signal Agreement</span>
+                                <Badge variant={
+                                    prediction.signalAgreementLabel === 'High Agreement' ? 'default' :
+                                    prediction.signalAgreementLabel === 'Mixed Signals' ? 'destructive' :
+                                    'secondary'
+                                }>
+                                    {prediction.signalAgreementLabel === 'High Agreement' && <StatusEmoji emoji="✅" label="High agreement" />}
+                                    {prediction.signalAgreementLabel === 'Mixed Signals' && <StatusEmoji emoji="⚠️" label="Mixed signals" />}
+                                    {' '}{prediction.signalAgreementLabel}
+                                </Badge>
                             </div>
+                        )}
+                    </div>
 
-                            <div className="space-y-2 pt-4 border-t border-border">
-                                <div className="text-sm font-medium text-muted-foreground mb-2">
-                                    Implied Probabilities
-                                </div>
-                                {Object.entries(prediction.impliedProbabilities)
-                                    .sort((a, b) => b[1] - a[1])
-                                    .map(([num, prob]) => (
-                                        <div key={num} className="flex items-center gap-3">
-                                            <Badge variant="outline" className="w-12 justify-center">
-                                                #{num}
-                                            </Badge>
-                                            <div className="flex-1 flex items-center gap-2">
-                                                <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-primary transition-all"
-                                                        style={{ width: `${prob}%` }}
-                                                    />
-                                                </div>
-                                                <span className="text-sm font-medium w-12 text-right">{prob}%</span>
-                                            </div>
+                    {prediction.signalAgreementLabel === 'High Agreement' && (
+                        <p className="text-sm text-muted-foreground">
+                            <StatusEmoji emoji="✅" label="High agreement" /> Prediction signals strongly agree on this pick
+                        </p>
+                    )}
+                    {prediction.signalAgreementLabel === 'Mixed Signals' && (
+                        <p className="text-sm text-muted-foreground">
+                            <StatusEmoji emoji="⚠️" label="Mixed signals" /> Prediction signals are mixed - consider lower bet or skip
+                        </p>
+                    )}
+
+                    {prediction.hotStreakBoost && (
+                        <Alert>
+                            <Zap className="h-4 w-4" />
+                            <AlertDescription>
+                                <strong>Hot Streak Detected!</strong> Contender {prediction.hotStreakBoost.contenderId} has won {prediction.hotStreakBoost.streakLength} consecutive races. 
+                                Confidence boosted by {((prediction.hotStreakBoost.boostFactor - 1) * 100).toFixed(0)}%.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
+                    <Separator />
+
+                    <div className="space-y-3">
+                        <h3 className="font-semibold flex items-center gap-2">
+                            <Target className="h-4 w-4" />
+                            Explain the Pick
+                        </h3>
+                        <div className="space-y-2">
+                            {prediction.signalBreakdown?.map((signal, i) => {
+                                const percentage = (signal.value * 100).toFixed(1);
+                                const isPositive = signal.value >= 0;
+                                return (
+                                    <div key={i} className="flex items-center justify-between text-sm">
+                                        <span className="text-muted-foreground">{signal.signal}</span>
+                                        <div className="flex items-center gap-2">
+                                            {isPositive ? (
+                                                <TrendingUp className="h-3 w-3 text-green-600" />
+                                            ) : (
+                                                <TrendingDown className="h-3 w-3 text-red-600" />
+                                            )}
+                                            <span className={`font-mono ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                                                {isPositive ? '+' : ''}{percentage}%
+                                            </span>
                                         </div>
-                                    ))}
-                            </div>
-                        </CardContent>
-                    </Card>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <DollarSign className="h-5 w-5" />
-                                Bet Sizing (Optional)
-                            </CardTitle>
-                            <CardDescription>Record your bet for performance tracking (100-10,000 range)</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="bet-horse">Horse to Bet On</Label>
-                                <Select value={betHorse} onValueChange={setBetHorse}>
-                                    <SelectTrigger id="bet-horse">
-                                        <SelectValue placeholder="Select horse" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {contenders.map((c) => (
-                                            <SelectItem key={c.number} value={c.number}>
-                                                #{c.number} ({prediction.impliedProbabilities[c.number]}% probability)
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                    <Separator />
 
-                            <div className="space-y-2">
-                                <Label htmlFor="bet-amount">Bet Amount</Label>
-                                <Select value={betAmount.toString()} onValueChange={(v) => setBetAmount(parseInt(v))}>
-                                    <SelectTrigger id="bet-amount">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="100">$100</SelectItem>
-                                        <SelectItem value="500">$500</SelectItem>
-                                        <SelectItem value="1000">$1,000</SelectItem>
-                                        <SelectItem value="2000">$2,000</SelectItem>
-                                        <SelectItem value="3000">$3,000</SelectItem>
-                                        <SelectItem value="4000">$4,000</SelectItem>
-                                        <SelectItem value="5000">$5,000</SelectItem>
-                                        <SelectItem value="6000">$6,000</SelectItem>
-                                        <SelectItem value="7000">$7,000</SelectItem>
-                                        <SelectItem value="8000">$8,000</SelectItem>
-                                        <SelectItem value="9000">$9,000</SelectItem>
-                                        <SelectItem value="10000">$10,000</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                    <div className="space-y-2">
+                        <h3 className="font-semibold">All Probabilities</h3>
+                        <div className="space-y-1">
+                            {Object.entries(prediction.probabilities)
+                                .sort(([, a], [, b]) => b - a)
+                                .map(([num, prob]) => (
+                                    <div key={num} className="flex justify-between text-sm">
+                                        <span>Contender {num}</span>
+                                        <span className="font-mono">{(prob * 100).toFixed(1)}%</span>
+                                    </div>
+                                ))}
+                        </div>
+                    </div>
 
-                            {betSuggestion && (
-                                <Alert>
-                                    <AlertDescription>
-                                        <div className="font-medium mb-1">Suggested: ${betSuggestion.amount.toLocaleString()}</div>
-                                        <div className="text-xs text-muted-foreground">{betSuggestion.explanation}</div>
-                                    </AlertDescription>
-                                </Alert>
+                    <div className="space-y-2">
+                        <h3 className="font-semibold">Suggested Bet</h3>
+                        <div className="p-4 bg-muted rounded-lg space-y-2">
+                            <div className="flex justify-between items-center">
+                                <span className="font-semibold">Amount:</span>
+                                <span className="text-2xl font-bold">${suggestedBet.amount.toFixed(0)}</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{suggestedBet.explanation}</p>
+                        </div>
+                    </div>
+
+                    <Button onClick={handlePredictionConfirm} className="w-full">
+                        Continue to Result Entry
+                    </Button>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (step === 'result') {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Enter Race Result</CardTitle>
+                    <CardDescription>Which contender won the race?</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="winner">Winning Contender</Label>
+                            <Input
+                                id="winner"
+                                type="number"
+                                min="1"
+                                max="6"
+                                placeholder="Enter 1-6"
+                                value={actualWinner}
+                                onChange={(e) => setActualWinner(e.target.value)}
+                                className={errors.winner ? 'border-destructive' : ''}
+                            />
+                            {errors.winner && (
+                                <p className="text-sm text-destructive">{errors.winner}</p>
                             )}
-                        </CardContent>
-                    </Card>
+                        </div>
+                        <Button onClick={handleResultSubmit} className="w-full">
+                            Continue to Bet Entry
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
-                    <Button onClick={() => setStep('outcome')} className="w-full" size="lg">
-                        <Trophy className="mr-2 h-5 w-5" />
-                        Record Race Outcome
-                    </Button>
-                </>
-            )}
+    if (step === 'bet' && prediction) {
+        const suggestedBet = calculateBetSize(
+            prediction.confidence / 100,
+            prediction.impliedProbabilities[prediction.predictedWinner],
+            100,
+            prediction.skipRace,
+            prediction.signalAgreement || 1.0
+        );
 
-            {step === 'outcome' && (
-                <>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Trophy className="h-5 w-5" />
-                                Race Outcome
-                            </CardTitle>
-                            <CardDescription>Select the top 3 finishers and optionally record margins</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="first-place">1st Place</Label>
-                                <Select value={firstPlace} onValueChange={setFirstPlace}>
-                                    <SelectTrigger id="first-place">
-                                        <SelectValue placeholder="Select winner" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {contenders.map((c) => (
-                                            <SelectItem key={c.number} value={c.number}>
-                                                #{c.number}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+        const isWin = prediction.predictedWinner === actualWinner;
 
-                            <div className="space-y-2">
-                                <Label htmlFor="first-margin" className="text-sm text-muted-foreground">
-                                    1st place margin (optional)
-                                </Label>
-                                <Input
-                                    id="first-margin"
-                                    type="number"
-                                    step="0.1"
-                                    min="0"
-                                    placeholder="e.g., 2.5"
-                                    value={firstPlaceMargin}
-                                    onChange={(e) => setFirstPlaceMargin(e.target.value)}
-                                />
-                            </div>
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Enter Bet Amount</CardTitle>
+                    <CardDescription>
+                        {isWin ? (
+                            <span className="text-green-600 font-semibold">✓ Prediction Correct!</span>
+                        ) : (
+                            <span className="text-red-600 font-semibold">✗ Prediction Incorrect</span>
+                        )}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="p-4 bg-muted rounded-lg space-y-2">
+                        <div className="flex justify-between">
+                            <span className="text-sm">Predicted:</span>
+                            <span className="font-semibold">Contender {prediction.predictedWinner}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-sm">Actual Winner:</span>
+                            <span className="font-semibold">Contender {actualWinner}</span>
+                        </div>
+                    </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="second-place">2nd Place</Label>
-                                <Select value={secondPlace} onValueChange={setSecondPlace}>
-                                    <SelectTrigger id="second-place">
-                                        <SelectValue placeholder="Select 2nd place" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {contenders.map((c) => (
-                                            <SelectItem key={c.number} value={c.number}>
-                                                #{c.number}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                    <div className="space-y-2">
+                        <Label>Select Bet Amount</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {[0, 10, 25, 50, 100, suggestedBet.amount].map((amount) => (
+                                <Button
+                                    key={amount}
+                                    variant={betAmount === amount.toString() ? 'default' : 'outline'}
+                                    onClick={() => {
+                                        setBetAmount(amount.toString());
+                                        setCustomBetAmount('');
+                                    }}
+                                    className="w-full"
+                                >
+                                    ${amount.toFixed(0)}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="second-margin" className="text-sm text-muted-foreground">
-                                    2nd place margin (optional)
-                                </Label>
-                                <Input
-                                    id="second-margin"
-                                    type="number"
-                                    step="0.1"
-                                    min="0"
-                                    placeholder="e.g., 1.0"
-                                    value={secondPlaceMargin}
-                                    onChange={(e) => setSecondPlaceMargin(e.target.value)}
-                                />
-                            </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="custom-bet">Or Enter Custom Amount</Label>
+                        <Input
+                            id="custom-bet"
+                            type="number"
+                            min="0"
+                            max="10000"
+                            placeholder="Enter amount"
+                            value={customBetAmount}
+                            onChange={(e) => {
+                                setCustomBetAmount(e.target.value);
+                                setBetAmount('');
+                            }}
+                            className={errors.bet ? 'border-destructive' : ''}
+                        />
+                        {errors.bet && (
+                            <p className="text-sm text-destructive">{errors.bet}</p>
+                        )}
+                    </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="third-place">3rd Place</Label>
-                                <Select value={thirdPlace} onValueChange={setThirdPlace}>
-                                    <SelectTrigger id="third-place">
-                                        <SelectValue placeholder="Select 3rd place" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {contenders.map((c) => (
-                                            <SelectItem key={c.number} value={c.number}>
-                                                #{c.number}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                    <div className="flex gap-2">
+                        <Button onClick={handleSkipBet} variant="outline" className="flex-1">
+                            Skip Bet ($0)
+                        </Button>
+                        <Button onClick={handleBetSubmit} className="flex-1">
+                            Submit Entry
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
-                            <div className="space-y-2">
-                                <Label htmlFor="third-margin" className="text-sm text-muted-foreground">
-                                    3rd place margin (optional)
-                                </Label>
-                                <Input
-                                    id="third-margin"
-                                    type="number"
-                                    step="0.1"
-                                    min="0"
-                                    placeholder="e.g., 0.5"
-                                    value={thirdPlaceMargin}
-                                    onChange={(e) => setThirdPlaceMargin(e.target.value)}
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {errors.length > 0 && (
-                        <Alert variant="destructive">
-                            <AlertDescription>
-                                <ul className="list-disc list-inside space-y-1">
-                                    {errors.map((error, idx) => (
-                                        <li key={idx}>{error}</li>
-                                    ))}
-                                </ul>
-                            </AlertDescription>
-                        </Alert>
-                    )}
-
-                    <Button onClick={handleSave} className="w-full" size="lg">
-                        Save Race Entry
-                    </Button>
-                </>
-            )}
-        </div>
-    );
+    return null;
 }

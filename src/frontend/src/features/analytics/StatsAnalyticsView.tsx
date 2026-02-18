@@ -1,231 +1,217 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { DollarSign, Activity, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { type LearnedState } from '@/storage/localMemoryStore';
-import { type RaceEntry } from '@/features/entries/types';
-import { calculateMetrics } from '@/features/learning/metrics';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import { StatusEmoji } from '@/components/StatusEmoji';
 
 interface StatsAnalyticsViewProps {
-    entries: RaceEntry[];
     learnedState: LearnedState;
 }
 
-export function StatsAnalyticsView({ entries, learnedState }: StatsAnalyticsViewProps) {
-    const metrics = calculateMetrics(entries, learnedState.totalBetAmount, learnedState.totalPayout);
+export function StatsAnalyticsView({ learnedState }: StatsAnalyticsViewProps) {
+    const contenderIds = Object.keys(learnedState.contenderStats);
 
-    if (entries.length === 0) {
+    if (contenderIds.length === 0) {
         return (
             <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                    <Activity className="h-16 w-16 text-muted-foreground mb-4" />
-                    <p className="text-lg font-medium text-muted-foreground mb-2">No statistics available yet</p>
-                    <p className="text-sm text-muted-foreground text-center">
-                        Record some races to see detailed analytics
-                    </p>
-                </CardContent>
+                <CardHeader>
+                    <CardTitle>Contender Statistics</CardTitle>
+                    <CardDescription>No data yet. Record some races to see stats.</CardDescription>
+                </CardHeader>
             </Card>
         );
     }
 
     return (
         <div className="space-y-6">
-            {/* Betting Performance Summary */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <DollarSign className="h-5 w-5" />
-                        Betting Performance
-                    </CardTitle>
-                    <CardDescription>Overall betting statistics and ROI tracking</CardDescription>
+                    <CardTitle>Learning Weights</CardTitle>
+                    <CardDescription>
+                        Model uses log-loss gradient descent to optimize these feature weights based on prediction accuracy
+                    </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <div className="text-sm text-muted-foreground">Prediction Accuracy</div>
-                            <div className="text-2xl font-bold">{metrics.accuracy}%</div>
-                            <Progress value={metrics.accuracy} className="h-2" />
+                <CardContent className="space-y-3">
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span>Odds Weight</span>
+                            <span className="font-mono">{learnedState.signalWeights.oddsWeight.toFixed(2)}</span>
                         </div>
-                        <div className="space-y-1">
-                            <div className="text-sm text-muted-foreground">Overall ROI</div>
-                            <div className={`text-2xl font-bold ${metrics.overallROI >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {metrics.overallROI >= 0 ? '+' : ''}{metrics.overallROI}%
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                                ${metrics.totalPayout.toLocaleString()} / ${metrics.totalBetAmount.toLocaleString()}
-                            </div>
-                        </div>
+                        <Progress value={learnedState.signalWeights.oddsWeight * 33} />
                     </div>
-
-                    {metrics.brierScore > 0 && (
-                        <div className="pt-3 border-t border-border">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Activity className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm text-muted-foreground">Calibration Score</span>
-                                </div>
-                                <span className="text-lg font-bold">{(1 - metrics.brierScore).toFixed(3)}</span>
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span>Historical Win Rate Weight</span>
+                            <span className="font-mono">{learnedState.signalWeights.historicalWinRateWeight.toFixed(2)}</span>
+                        </div>
+                        <Progress value={learnedState.signalWeights.historicalWinRateWeight * 33} />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span>Recent Form Weight</span>
+                            <span className="font-mono">{learnedState.signalWeights.recentFormWeight.toFixed(2)}</span>
+                        </div>
+                        <Progress value={learnedState.signalWeights.recentFormWeight * 33} />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span>Streak Weight</span>
+                            <span className="font-mono">{learnedState.signalWeights.streakWeight.toFixed(2)}</span>
+                        </div>
+                        <Progress value={learnedState.signalWeights.streakWeight * 33} />
+                    </div>
+                    {learnedState.currentLogLoss > 0 && (
+                        <div className="mt-4 pt-4 border-t">
+                            <div className="flex justify-between text-sm">
+                                <span>Current Log-Loss</span>
+                                <span className="font-mono">{learnedState.currentLogLoss.toFixed(3)}</span>
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
-                                Measures how well predicted probabilities match actual outcomes (1.0 is perfect)
+                                Lower is better. Weights adjust automatically to minimize this value.
                             </p>
                         </div>
                     )}
-
-                    {Object.keys(metrics.strategyROI).length > 0 && (
-                        <div className="pt-3 border-t border-border">
-                            <div className="text-sm font-medium mb-2">Strategy Performance</div>
-                            {Object.entries(metrics.strategyROI).map(([strategyId, roi]) => (
-                                <div key={strategyId} className="flex items-center justify-between text-sm py-1">
-                                    <span className="text-muted-foreground">{strategyId}</span>
-                                    <span className={`font-medium ${roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {roi >= 0 ? '+' : ''}{roi}%
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
                 </CardContent>
             </Card>
 
-            {/* Contender Statistics with Win/Place/Show */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Contender Statistics</CardTitle>
-                    <CardDescription>Win, Place, and Show percentages by position number</CardDescription>
+                    <CardTitle>Contender Performance</CardTitle>
+                    <CardDescription>
+                        Blended stats: 60% recent window ({learnedState.recentWindowSize} races) + 40% lifetime
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-4">
-                        {Object.entries(learnedState.contenderStats)
-                            .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
-                            .map(([number, stats]) => {
-                                const winRate = stats.appearances > 0 
-                                    ? Math.round((stats.wins / stats.appearances) * 100) 
-                                    : 0;
-                                const placeRate = stats.appearances > 0 
-                                    ? Math.round((stats.places / stats.appearances) * 100) 
-                                    : 0;
-                                const showRate = stats.appearances > 0 
-                                    ? Math.round((stats.shows / stats.appearances) * 100) 
-                                    : 0;
-                                
-                                const streak = learnedState.streakData[number];
-                                const variance = learnedState.varianceData[number];
-                                
-                                return (
-                                    <div key={number} className="p-4 border border-border rounded-lg space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Badge variant="outline" className="text-lg px-3 py-1">
-                                                    #{number}
-                                                </Badge>
-                                                <span className="text-sm text-muted-foreground">
-                                                    {stats.appearances} races
-                                                </span>
-                                            </div>
-                                            {streak && streak.type !== 'none' && (
-                                                <div className="flex items-center gap-1">
-                                                    {streak.type === 'win' && <TrendingUp className="h-4 w-4 text-green-600" />}
-                                                    {streak.type === 'podium' && <TrendingUp className="h-4 w-4 text-blue-600" />}
-                                                    {streak.type === 'loss' && <TrendingDown className="h-4 w-4 text-red-600" />}
-                                                    <span className="text-xs font-medium">
-                                                        {Math.abs(streak.currentStreak)} {streak.type}
-                                                    </span>
-                                                </div>
-                                            )}
+                    <div className="space-y-6">
+                        {contenderIds.map(contenderId => {
+                            const stats = learnedState.contenderStats[contenderId];
+                            const winPct = stats.appearances > 0 ? (stats.wins / stats.appearances) * 100 : 0;
+                            const placePct = stats.appearances > 0 ? (stats.places / stats.appearances) * 100 : 0;
+                            const showPct = stats.appearances > 0 ? (stats.shows / stats.appearances) * 100 : 0;
+                            const podiumPct = stats.appearances > 0 
+                                ? ((stats.wins + stats.places + stats.shows) / stats.appearances) * 100 
+                                : 0;
+
+                            const variance = learnedState.varianceData[contenderId];
+                            const consistency = variance?.consistency || 'unknown';
+
+                            // Odds movement display
+                            let oddsMovementDisplay = 'N/A';
+                            let oddsMovementIcon = '➡️';
+                            if (stats.oddsMovement !== null) {
+                                if (stats.oddsMovement > 0.05) {
+                                    oddsMovementDisplay = 'Rising';
+                                    oddsMovementIcon = '⬆️';
+                                } else if (stats.oddsMovement < -0.05) {
+                                    oddsMovementDisplay = 'Falling';
+                                    oddsMovementIcon = '⬇️';
+                                } else {
+                                    oddsMovementDisplay = 'Stable';
+                                    oddsMovementIcon = '➡️';
+                                }
+                            }
+
+                            return (
+                                <div key={contenderId} className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className="font-semibold">Contender {contenderId}</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                {stats.appearances} race{stats.appearances !== 1 ? 's' : ''}
+                                            </p>
                                         </div>
-
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <div className="space-y-1">
-                                                <div className="text-xs text-muted-foreground">Win %</div>
-                                                <div className="text-lg font-bold">{winRate}%</div>
-                                                <Progress value={winRate} className="h-1.5" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <div className="text-xs text-muted-foreground">Place %</div>
-                                                <div className="text-lg font-bold">{placeRate}%</div>
-                                                <Progress value={placeRate} className="h-1.5" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <div className="text-xs text-muted-foreground">Show %</div>
-                                                <div className="text-lg font-bold">{showRate}%</div>
-                                                <Progress value={showRate} className="h-1.5" />
-                                            </div>
+                                        <div className="flex gap-2">
+                                            <Badge variant={consistency === 'high' ? 'default' : consistency === 'medium' ? 'secondary' : 'outline'}>
+                                                {consistency}
+                                            </Badge>
                                         </div>
-
-                                        {variance && (
-                                            <div className="pt-2 border-t border-border">
-                                                <div className="flex items-center justify-between text-xs">
-                                                    <span className="text-muted-foreground">Consistency</span>
-                                                    <Badge variant="outline" className="text-xs">
-                                                        {variance.consistency === 'high' && '🎯 High'}
-                                                        {variance.consistency === 'medium' && '➖ Medium'}
-                                                        {variance.consistency === 'low' && '⚠️ Low'}
-                                                        {variance.consistency === 'unknown' && '❓ Unknown'}
-                                                    </Badge>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {stats.recentForm.length > 0 && (
-                                            <div className="pt-2 border-t border-border">
-                                                <div className="text-xs text-muted-foreground mb-2">Recent Form (Last 5)</div>
-                                                <div className="flex gap-2">
-                                                    {stats.recentForm.map((race, idx) => (
-                                                        <div key={idx} className="flex-1">
-                                                            <Badge 
-                                                                variant={race.position === 1 ? 'default' : race.position > 0 ? 'secondary' : 'outline'}
-                                                                className="w-full justify-center text-xs"
-                                                            >
-                                                                {race.position > 0 ? `${race.position}${race.position === 1 ? 'st' : race.position === 2 ? 'nd' : 'rd'}` : 'Out'}
-                                                            </Badge>
-                                                            {race.margin !== undefined && (
-                                                                <div className="text-center text-xs text-muted-foreground mt-0.5">
-                                                                    {race.margin.toFixed(1)}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
-                                );
-                            })}
-                    </div>
-                </CardContent>
-            </Card>
 
-            {/* Learning Weights */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Adaptive Learning Weights</CardTitle>
-                    <CardDescription>Current signal weights used in predictions (auto-adjusted)</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm">Odds Signal</span>
-                            <span className="text-sm font-medium">{learnedState.signalWeights.oddsWeight.toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm">Historical Win Rate</span>
-                            <span className="text-sm font-medium">{learnedState.signalWeights.historicalWinRateWeight.toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm">Recent Form</span>
-                            <span className="text-sm font-medium">{learnedState.signalWeights.recentFormWeight.toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm">Streak/Momentum</span>
-                            <span className="text-sm font-medium">{learnedState.signalWeights.streakWeight.toFixed(2)}</span>
-                        </div>
+                                    <div className="grid grid-cols-3 gap-2 text-sm">
+                                        <div>
+                                            <div className="text-muted-foreground">Win</div>
+                                            <div className="font-semibold">{winPct.toFixed(1)}%</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-muted-foreground">Place</div>
+                                            <div className="font-semibold">{placePct.toFixed(1)}%</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-muted-foreground">Show</div>
+                                            <div className="font-semibold">{showPct.toFixed(1)}%</div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="text-sm text-muted-foreground mb-1">Podium Rate</div>
+                                        <Progress value={podiumPct} />
+                                        <div className="text-xs text-muted-foreground mt-1">{podiumPct.toFixed(1)}%</div>
+                                    </div>
+
+                                    <div className="text-sm space-y-1">
+                                        <div className="font-medium">Streaks:</div>
+                                        <div className="flex flex-wrap gap-3">
+                                            <span>
+                                                Win: <StatusEmoji emoji="🔥" label="Win streak" /> {stats.winStreak}
+                                            </span>
+                                            <span>
+                                                Place: <StatusEmoji emoji="📈" label="Placer streak" /> {stats.placerStreak}
+                                            </span>
+                                            <span>
+                                                Low: <StatusEmoji emoji="📉" label="Lower streak" /> {stats.lowerStreak}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-sm space-y-1">
+                                        <div className="font-medium">Odds Movement:</div>
+                                        <div>
+                                            <StatusEmoji emoji={oddsMovementIcon} label={`Odds ${oddsMovementDisplay}`} /> {oddsMovementDisplay}
+                                        </div>
+                                    </div>
+
+                                    <div className="text-sm space-y-1">
+                                        <div className="font-medium">Momentum Score:</div>
+                                        <div className="flex items-center gap-2">
+                                            <Progress value={stats.momentumScore * 100} className="flex-1" />
+                                            <span className="font-mono text-xs">{(stats.momentumScore * 100).toFixed(0)}%</span>
+                                        </div>
+                                    </div>
+
+                                    {stats.recentForm.length > 0 && (
+                                        <div className="text-sm">
+                                            <div className="font-medium mb-1">Recent Form (last 5):</div>
+                                            <div className="flex gap-1">
+                                                {stats.recentForm.map((form, i) => (
+                                                    <Badge
+                                                        key={i}
+                                                        variant={
+                                                            form.position === 1 ? 'default' :
+                                                            form.position === 2 || form.position === 3 ? 'secondary' :
+                                                            'outline'
+                                                        }
+                                                    >
+                                                        {form.position === 0 ? 'DNF' : `${form.position}${getOrdinalSuffix(form.position)}`}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <Separator />
+                                </div>
+                            );
+                        })}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-4">
-                        Weights are automatically adjusted based on prediction accuracy to improve over time.
-                    </p>
                 </CardContent>
             </Card>
         </div>
     );
+}
+
+function getOrdinalSuffix(n: number): string {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
 }

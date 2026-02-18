@@ -1,170 +1,37 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Advanced stats tracking, adaptive weighted prediction, and updated bet sizing (frontend-only)",
+  "title": "Update odds input to fractional format with /1 denominator and 0 placeholder",
   "requirements": [
     {
-      "id": "REQ-31",
-      "summary": "Extend RaceEntry to persist podium positions plus optional podium margins to enable horse-level Win/Place/Show and last-5 recent form computations from on-device history.",
+      "id": "REQ-70",
+      "summary": "Update the odds numerator input field placeholder to display '0' when empty",
       "acceptanceCriteria": [
-        "RaceEntry (frontend/src/features/entries/types.ts) includes fields sufficient to compute per-contender Win/Place/Show percentages across saved history.",
-        "RaceEntry supports recording margin values for 1st/2nd/3rd place (podium) as optional numeric fields (or equivalent structure).",
-        "Existing saved entries without margin fields continue to load without runtime errors (margins treated as unknown/blank)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/features/entries/types.ts",
-          "operation": "modify",
-          "description": "Extend RaceEntry with optional persisted podium margin fields (e.g., firstPlaceMargin/secondPlaceMargin/thirdPlaceMargin) and any additional horse-level tracking fields needed for downstream learned-state computations; ensure fields are optional for backward compatibility."
-        },
-        {
-          "path": "frontend/src/storage/localMemoryStore.ts",
-          "operation": "modify",
-          "description": "Harden parsing/loading paths so historical RaceEntry objects lacking new optional margin fields still load and compute safely (treat as unknown/blank) without runtime errors."
-        }
-      ]
-    },
-    {
-      "id": "REQ-32",
-      "summary": "Update the New Entry flow Race Outcome step to capture optional podium margins with clear English labels and validation while preserving existing podium selection workflow.",
-      "acceptanceCriteria": [
-        "The Race Outcome step includes inputs for 1st/2nd/3rd margin values with English labels (e.g., \"1st place margin\").",
-        "Validation prevents saving if a provided margin is negative or non-numeric (blank margins are allowed).",
-        "Saving a race preserves the existing podium validation rules (distinct 1st/2nd/3rd)."
+        "The odds numerator input field shows '0' as placeholder text when empty",
+        "No other placeholder text (e.g., 'e.g., 5.0' or '-/1') is displayed in the input field",
+        "The placeholder disappears when the user begins typing"
       ],
       "file_operations": [
         {
           "path": "frontend/src/features/entries/EntryFlow.tsx",
           "operation": "modify",
-          "description": "Add three optional margin inputs to the Race Outcome step (English labels for 1st/2nd/3rd place margin), wire them into component state, include them in the saved RaceEntry, and keep existing podium selection UX intact. Use existing shadcn-ui building blocks already in use (e.g., Label/Input/Card); verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/features/entries/validation.ts",
-          "operation": "modify",
-          "description": "Extend validation to include podium margin validation: allow blanks, but if provided must be numeric and >= 0; ensure existing podium distinctness rules remain unchanged and still enforced."
+          "description": "Update the odds numerator input field placeholder attribute to display '0' instead of any existing placeholder text. Locate the input element for odds numerator (likely in the contender odds entry section) and set its placeholder prop to '0'. Ensure the placeholder styling maintains consistency with existing input fields and follows mobile-first responsive design principles."
         }
       ]
     },
     {
-      "id": "REQ-33",
-      "summary": "Compute and display horse-level Win/Place/Show and last-5 Recent Form (with margins when available) derived from saved history in the Stats view.",
+      "id": "REQ-71",
+      "summary": "Add non-editable '/1' label adjacent to each odds numerator input field",
       "acceptanceCriteria": [
-        "The learned state computation (frontend/src/storage/localMemoryStore.ts) derives per-contender win/place/show counts and percentages from saved races.",
-        "The Stats tab (frontend/src/features/analytics/StatsAnalyticsView.tsx) displays Win/Place/Show percentages per contender number with clear English labels.",
-        "The Stats tab shows a Recent Form section per contender number listing the last 5 recorded results; if a contender was not in the podium for a race, it is represented as \"Unplaced\" (or similar English label).",
-        "If margins are missing for historical races, the UI indicates margin as unknown/blank without crashing."
+        "A non-editable '/1' label is rendered immediately adjacent to the right side of each odds numerator input field",
+        "The '/1' label is consistently positioned across all 6 contender rows",
+        "The label uses the same visual styling (font size, color, alignment) as the existing odds display pattern to maintain consistency"
       ],
       "file_operations": [
-        {
-          "path": "frontend/src/storage/localMemoryStore.ts",
-          "operation": "modify",
-          "description": "Reintroduce/extend learned-state recomputation to derive per-contender aggregates including win/place/show counts + percentages and a last-5 recent-form list based on podium positions; include margin values when present and treat absent margins as unknown."
-        },
-        {
-          "path": "frontend/src/features/analytics/StatsAnalyticsView.tsx",
-          "operation": "modify",
-          "description": "Extend the Stats UI to show per-contender Win %, Place %, Show % with clear English labels and add a per-contender Recent Form (last 5) section that lists position results and margin when available (otherwise show blank/unknown) and renders non-podium races as \"Unplaced\". Use existing shadcn-ui components already referenced by the project; verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-34",
-      "summary": "Enhance prediction strategy to a weighted ensemble with learnable per-signal trust factors stored on-device and updated after each saved race using probability calibration feedback.",
-      "acceptanceCriteria": [
-        "Prediction generation (frontend/src/features/learning/model.ts) uses at least two signals combined via weights: (1) market odds signal and (2) learned historical performance signals derived from saved history (e.g., win/place/show rates and/or recent form).",
-        "A learned weight/trust-factor structure is stored on-device (as part of learned state) and is updated after saving races based on prediction vs outcome (probability calibration feedback).",
-        "The model outputs per-contender implied probabilities (still stored on RaceEntry.impliedProbabilities) and a strategyId that reflects the enhanced strategy (not the old hardcoded id).",
-        "User-facing labels/descriptions in the UI remain in English and do not claim guaranteed improvement."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/storage/localMemoryStore.ts",
-          "operation": "modify",
-          "description": "Extend LearnedState to persist a learnable weight/trust-factor structure for multiple prediction signals, and update recomputation logic to update these weights after processing each saved race using a continuous calibration feedback loop that compares stored implied probabilities vs actual outcomes; default safely when missing."
-        },
-        {
-          "path": "frontend/src/features/learning/model.ts",
-          "operation": "modify",
-          "description": "Update makePrediction to compute per-contender probabilities via a weighted combination of at least (a) market odds signal and (b) learned historical performance signals from learnedState, using learned trust-factor weights; emit an updated strategyId representing the enhanced ensemble strategy and keep impliedProbabilities on RaceEntry."
-        },
         {
           "path": "frontend/src/features/entries/EntryFlow.tsx",
           "operation": "modify",
-          "description": "Review and adjust any user-facing prediction description text to remain English, clearly descriptive, and non-promissory (no guaranteed-improvement claims) while continuing to display implied probabilities and confidence. Use existing shadcn-ui components already in use; verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-35",
-      "summary": "Add streak/slump and variance/consistency signals (using margins where available) into learned stats, prediction confidence adjustment, and Stats view summaries.",
-      "acceptanceCriteria": [
-        "The learned on-device stats include a streak/slump indicator per contender number based on recent outcomes (e.g., consecutive podium appearances or wins).",
-        "If podium margins are available, the learned on-device stats include a simple variance/consistency measure derived from recent margins; if margins are not available, the app gracefully degrades (variance shown as unavailable).",
-        "Prediction confidence is adjusted downward when variance/erratic performance is high (when the variance signal is available).",
-        "Stats view displays streak/slump and variance/consistency signals using English labels and without requiring any backend services."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/storage/localMemoryStore.ts",
-          "operation": "modify",
-          "description": "Extend learned-state computations to derive per-contender streak/slump indicators from recent outcomes and a variance/consistency measure from recent recorded margins when available; represent variance as unavailable when insufficient/missing margin data."
-        },
-        {
-          "path": "frontend/src/features/learning/model.ts",
-          "operation": "modify",
-          "description": "Incorporate streak/slump and (when available) variance/consistency signals into confidence calculation (e.g., reduce confidence under high variance/erratic performance) while keeping odds as a core signal."
-        },
-        {
-          "path": "frontend/src/features/analytics/StatsAnalyticsView.tsx",
-          "operation": "modify",
-          "description": "Add English-labeled streak/slump and variance/consistency summaries to the contender stats sections, showing variance as unavailable when margin data is missing/insufficient. Use existing shadcn-ui components already referenced; verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-36",
-      "summary": "Update bet sizing guidance and EntryFlow bet UI/validation to support a 100 minimum and 10,000 maximum bet amount with English labels.",
-      "acceptanceCriteria": [
-        "Bet sizing calculation (frontend/src/lib/betSizing.ts) enforces min=100 and max=10,000.",
-        "EntryFlow bet recording validation accepts bet amounts from 100 to 10,000 inclusive.",
-        "The Bet Amount selector UI in EntryFlow offers values that include 100 and reach 10,000 (spacing/increments can be updated as needed), and the label text reflects the new range in English."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/lib/betSizing.ts",
-          "operation": "modify",
-          "description": "Adjust bet sizing clamping and rounding so suggested amounts respect min=100 and max=10,000; update any increments/rounding logic accordingly and keep the returned explanation in English."
-        },
-        {
-          "path": "frontend/src/features/entries/EntryFlow.tsx",
-          "operation": "modify",
-          "description": "Update bet amount validation to accept 100–10,000 inclusive; update the Bet Amount label text to reflect the new English range and adjust the Select options to include 100 and reach 10,000 (choose appropriate increments). Use existing shadcn-ui Select/Label components already in use; verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-37",
-      "summary": "Update localStorage schema/version handling so newly added learned-state fields (stats, streak/variance, weights) are backward compatible and recomputation persists across sessions.",
-      "acceptanceCriteria": [
-        "Existing localStorage entries created before this change still load successfully after the update (no forced data wipe solely due to new fields).",
-        "New learned-state fields default safely when absent and are recomputed from history when possible.",
-        "Recompute learned state (triggered after saving a race) updates the new signals/weights consistently across sessions (survives reload)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/storage/storageKeys.ts",
-          "operation": "modify",
-          "description": "Adjust storage versioning approach (and/or add migration identifiers) to support backward-compatible upgrades without forcing a data wipe for existing users."
-        },
-        {
-          "path": "frontend/src/storage/localMemoryStore.ts",
-          "operation": "modify",
-          "description": "Replace version-mismatch behavior that clears data with a safe migration/defaulting strategy: load existing entries when possible, default missing new fields, and rely on recomputation from history to fill derived learned-state fields; ensure learned-state fields (weights, streak/variance, expanded contender stats) survive reload via save/load."
-        },
-        {
-          "path": "frontend/src/storage/useOnDeviceMemory.ts",
-          "operation": "modify",
-          "description": "Ensure the recompute flow triggered after saving a race persists the updated learned state (including new signals/weights) and that initialization triggers safe recomputation when loaded learned-state fields are missing or outdated."
+          "description": "Add a non-editable '/1' text label immediately to the right of each odds numerator input field. Wrap the input and label in a flex container to ensure consistent horizontal alignment. Apply styling that matches the existing odds display pattern (font size, color, vertical alignment) and maintains mobile-first responsive design with touch-friendly spacing. Ensure the '/1' label is present for all 6 contender rows in the odds entry step."
         }
       ]
     }

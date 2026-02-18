@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 21,
-  "summary": "Shift the horse-race prediction app away from per-horse dynamic profiles and detailed per-horse stat tracking; simplify saved race outcomes to only record 1st/2nd/3rd finish order, and remove horse names if they are not used by the prediction logic.",
+  "projectStateVersion": 39,
+  "summary": "Odds storage must include both numerator and denominator (or decimal form) so 5/1 vs 5/2 are not conflated. Store computed implied probability with each race. Prediction output must include value edge (predictedProb – impliedProb) for betting decisions. Update bet sizing to factor in edge + variance, not just raw probability. Model weight updates should be driven by log-loss, not arbitrary Bayesian vibes. Add session window (e.g., last 50 races) for recency-weighted stats blended with lifetime stats. Store predicted probabilities per race for real calibration tracking. Ensure contender identity (name or number) is stored separately from lane/slot index. Cache computed contender stats on-device for fast load times.",
   "architectural_notes": [
     "Use on-device persistent storage (e.g., AsyncStorage) for races/history and learned parameters.",
     "Prediction algorithm should incorporate historical user-entered outcomes to adapt over time (simple incremental model acceptable).",
@@ -14,10 +14,7 @@
     "Simplify race outcome logging to store only the top-3 finish order (1st/2nd/3rd).",
     "Remove horse names from the saved race model and UI if they are not used by prediction."
   ],
-  "known_issues": [
-    "Potential scope conflict: current project direction removes per-horse profiles/stats and margins, but latest requirements request per-horse stats (W/P/S, last-5, margins) and variance metrics based on finish gaps.",
-    "Bet sizing constraints conflict: existing rule enforces 1,000 minimum with 1,000 step size, but latest requirement requests 100 minimum."
-  ],
+  "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
@@ -315,6 +312,278 @@
         "REQ-37"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-new-entry-odds-numerator-input-so-the-example-placeholder-shown-in-each-horse-odds-field-reads-0-until-the-user-enters-a-value-replace-the-current-example-text-like-e-g-5-0",
+      "title": "Update the New Entry odds numerator input so the example/placeholder shown in each horse odds field reads \"0\" until the user enters a value (replace the current example text like \"e.g., 5.0\").",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-place-podium-margin-capture-from-the-race-outcome-race-recording-step-so-users-only-select-1st-2nd-3rd-and-the-app-no-longer-validates-saves-or-references-margin-inputs-when-recording-a-race-outcome",
+      "title": "Remove place/podium margin capture from the \"Race Outcome\" (race recording) step so users only select 1st/2nd/3rd and the app no longer validates, saves, or references margin inputs when recording a race outcome.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-emoji-based-visual-indicators-beyond-the-existing-prediction-confidence-display-so-that-other-key-user-facing-metrics-also-show-an-emoji-that-reflects-their-qualitative-status-good-neutral-bad-using-clear-consistent-ranges-and-english-labels-at-minimum-add-emoji-indicators-in-the-stats-view-for-a-prediction-accuracy-b-overall-roi-and-c-calibration-score-when-shown-reuse-the-existing-emoji-range-patterns-where-possible-e-g-the-confidence-emoji-scale-in-entryflow-and-the-accuracy-emoji-scale-in-accuracyvisuals-so-the-app-s-attitude-is-consistent-across-screens",
+      "title": "Extend emoji-based visual indicators beyond the existing prediction confidence display so that other key user-facing metrics also show an emoji that reflects their qualitative status (good/neutral/bad) using clear, consistent ranges and English labels. At minimum, add emoji indicators in the Stats view for: (a) Prediction Accuracy, (b) Overall ROI, and (c) Calibration Score (when shown). Reuse the existing emoji/range patterns where possible (e.g., the confidence emoji scale in EntryFlow and the accuracy emoji scale in accuracyVisuals) so the app’s “attitude” is consistent across screens.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-on-device-race-entry-data-model-to-store-odds-as-either-numerator-number-denominator-number-or-as-a-single-decimal-odds-float-value-replacing-the-current-numerator-only-storage-so-that-5-1-and-5-2-are-correctly-distinguished",
+      "title": "Update the on-device race entry data model to store odds as either {numerator: number, denominator: number} or as a single decimal odds float value, replacing the current numerator-only storage so that 5/1 and 5/2 are correctly distinguished.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-compute-and-store-implied-probability-for-every-race-using-the-formula-impliedprob-denominator-numerator-denominator-and-save-it-alongside-the-race-entry-data-to-enable-consistent-calibration-calculations",
+      "title": "Compute and store implied probability for every race using the formula impliedProb = denominator / (numerator + denominator), and save it alongside the race entry data to enable consistent calibration calculations.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-race-entry-model-to-store-contender-identity-contender-number-or-name-separately-from-lane-slot-index-1-6-so-that-statistics-track-which-horse-performed-well-not-just-which-slot-performed-well",
+      "title": "Update the race entry model to store contender identity (contender number or name) separately from lane/slot index (1-6) so that statistics track \"which horse\" performed well, not just \"which slot\" performed well.",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-store-the-predicted-probability-and-actual-result-1-if-win-0-if-not-for-every-contender-in-every-race-so-that-calibration-can-be-accurately-calculated-by-comparing-predicted-probabilities-to-actual-outcomes-over-time",
+      "title": "Store the predicted probability and actual result (1 if win, 0 if not) for every contender in every race so that calibration can be accurately calculated by comparing predicted probabilities to actual outcomes over time.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-session-window-e-g-last-50-races-to-the-learning-model-and-compute-statistics-for-both-lifetime-history-and-the-recent-window-then-blend-the-two-sets-of-stats-using-a-configurable-weighting-to-balance-long-term-trends-with-recent-performance",
+      "title": "Add a session window (e.g., last 50 races) to the learning model and compute statistics for both lifetime history and the recent window, then blend the two sets of stats using a configurable weighting to balance long-term trends with recent performance.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-current-bayesian-style-weight-update-mechanism-with-a-concrete-log-loss-based-feedback-loop-after-each-race-compute-loss-log-predictedprobofwinner-then-adjust-feature-weights-to-reduce-this-loss-over-time-making-the-model-converge-on-accurate-predictions",
+      "title": "Replace the current Bayesian-style weight update mechanism with a concrete log-loss-based feedback loop: after each race, compute loss = -log(predictedProbOfWinner), then adjust feature weights to reduce this loss over time, making the model converge on accurate predictions.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-value-edge-calculation-to-the-prediction-output-using-the-formula-edge-predictedprob-impliedprob-and-display-this-edge-value-in-the-prediction-ui-so-users-can-identify-when-a-bet-has-positive-expected-value-regardless-of-whether-it-is-the-most-likely-winner",
+      "title": "Add value edge calculation to the prediction output using the formula edge = predictedProb - impliedProb, and display this edge value in the prediction UI so users can identify when a bet has positive expected value regardless of whether it is the most likely winner.",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-bet-sizing-algorithm-to-factor-in-both-value-edge-and-confidence-variance-small-edge-or-high-variance-suggests-1k-2k-decent-edge-with-medium-variance-suggests-4k-6k-strong-edge-with-low-variance-suggests-8k-10k-preventing-the-app-from-recommending-large-bets-on-uncertain-predictions",
+      "title": "Update the bet sizing algorithm to factor in both value edge and confidence (variance): small edge or high variance suggests 1k-2k; decent edge with medium variance suggests 4k-6k; strong edge with low variance suggests 8k-10k, preventing the app from recommending large bets on uncertain predictions.",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-new-on-device-storage-key-for-cached-computed-contender-stats-e-g-contenders-so-that-win-place-show-percentages-recent-form-and-other-per-contender-metrics-are-precomputed-and-stored-eliminating-the-need-to-recompute-all-stats-from-full-history-on-every-app-open",
+      "title": "Add a new on-device storage key for cached computed contender stats (e.g., 'contenders') so that Win/Place/Show percentages, recent form, and other per-contender metrics are precomputed and stored, eliminating the need to recompute all stats from full history on every app open.",
+      "reqIds": [
+        "REQ-49"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-model-mood-indicator-to-the-prediction-output-ui-that-displays-high-medium-or-low-confidence-based-on-the-model-s-recent-calibration-score-and-prediction-accuracy-over-the-last-15-20-races-using-clear-english-labels-and-the-existing-emoji-color-patterns-for-visual-feedback",
+      "title": "Add a Model Mood indicator to the prediction output UI that displays High, Medium, or Low confidence based on the model's recent calibration score and prediction accuracy over the last 15-20 races, using clear English labels and the existing emoji/color patterns for visual feedback.",
+      "reqIds": [
+        "REQ-50"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-do-not-bet-mode-that-evaluates-whether-any-contender-has-a-meaningful-positive-value-edge-predictedprob-significantly-exceeding-impliedprob-and-if-no-contender-meets-the-threshold-recommend-skip-this-race-in-the-prediction-output-ui-with-clear-messaging",
+      "title": "Implement a Do Not Bet mode that evaluates whether any contender has a meaningful positive value edge (predictedProb significantly exceeding impliedProb), and if no contender meets the threshold, recommend Skip this race in the prediction output UI with clear messaging.",
+      "reqIds": [
+        "REQ-51"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-explain-the-pick-breakdown-to-the-prediction-output-that-shows-per-signal-contribution-to-the-final-confidence-score-e-g-odds-signal-0-18-recent-form-0-11-history-0-06-consistency-0-03-with-the-final-confidence-percentage-displayed-in-a-clean-scannable-format-without-walls-of-text",
+      "title": "Add an Explain the Pick breakdown to the prediction output that shows per-signal contribution to the final confidence score (e.g., Odds Signal: +0.18, Recent Form: +0.11, History: +0.06, Consistency: -0.03) with the final confidence percentage, displayed in a clean, scannable format without walls of text.",
+      "reqIds": [
+        "REQ-52"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-hot-streak-override-in-the-prediction-model-that-detects-when-a-contender-has-finished-in-the-podium-1st-2nd-or-3rd-for-4-or-more-consecutive-races-and-temporarily-increases-that-contender-s-predicted-probability-even-if-lifetime-stats-suggest-otherwise-with-the-boost-persisting-until-the-streak-is-broken",
+      "title": "Implement a Hot Streak Override in the prediction model that detects when a contender has finished in the podium (1st, 2nd, or 3rd) for 4 or more consecutive races, and temporarily increases that contender's predicted probability even if lifetime stats suggest otherwise, with the boost persisting until the streak is broken.",
+      "reqIds": [
+        "REQ-53"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-strategy-profiles-to-the-prediction-flow-that-let-users-select-between-safe-mode-higher-hit-rate-lower-roi-value-mode-lower-hit-rate-higher-roi-balanced-and-aggressive-where-each-mode-applies-different-feature-weight-presets-to-the-same-underlying-prediction-model",
+      "title": "Add Strategy Profiles to the prediction flow that let users select between Safe Mode (higher hit rate, lower ROI), Value Mode (lower hit rate, higher ROI), Balanced, and Aggressive, where each mode applies different feature weight presets to the same underlying prediction model.",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-rng-tilt-detection-that-monitors-recent-prediction-performance-and-triggers-a-warning-message-pattern-shift-detected-reducing-bet-size-temporarily-when-the-model-starts-missing-predictions-badly-for-multiple-consecutive-races-temporarily-reducing-suggested-bet-sizes-until-performance-stabilizes",
+      "title": "Implement RNG Tilt detection that monitors recent prediction performance and triggers a warning message (Pattern shift detected. Reducing bet size temporarily.) when the model starts missing predictions badly for multiple consecutive races, temporarily reducing suggested bet sizes until performance stabilizes.",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-odds-numerator-input-field-in-the-new-entry-flow-so-the-placeholder-text-displays-0-not-1-or-any-other-text-when-the-field-is-empty-and-position-the-non-editable-1-label-immediately-to-the-right-of-the-input-field",
+      "title": "Update the odds numerator input field in the New Entry flow so the placeholder text displays '0' (not '-/1' or any other text) when the field is empty, and position the non-editable '/1' label immediately to the right of the input field.",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-new-main-info-dashboard-page-accessible-via-the-existing-tab-navigation-that-displays-key-performance-counters-total-races-run-count-of-saved-race-entries-prediction-accuracy-percentage-overall-model-accuracy-from-history-and-roi-return-on-investment-from-betting-performance-tracking",
+      "title": "Create a new main info/dashboard page accessible via the existing tab navigation that displays key performance counters: total races run (count of saved race entries), prediction accuracy percentage (overall model accuracy from history), and ROI (return on investment from betting performance tracking).",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-bet-amount-constraints-in-the-new-entry-flow-to-support-a-minimum-bet-of-0-instead-of-100-and-a-maximum-bet-of-10-000-and-replace-the-fixed-increment-dropdown-with-a-custom-numeric-input-field-that-allows-users-to-enter-any-value-within-the-valid-range",
+      "title": "Update the bet amount constraints in the New Entry flow to support a minimum bet of 0 (instead of 100) and a maximum bet of 10,000, and replace the fixed increment dropdown with a custom numeric input field that allows users to enter any value within the valid range.",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-bet-sizing-algorithm-logic-to-account-for-the-new-minimum-bet-constraint-of-0-ensuring-that-when-the-model-recommends-do-not-bet-or-detects-unfavorable-conditions-it-can-suggest-a-bet-amount-of-0-instead-of-being-forced-to-recommend-at-least-100",
+      "title": "Update the bet sizing algorithm logic to account for the new minimum bet constraint of 0, ensuring that when the model recommends 'Do Not Bet' or detects unfavorable conditions, it can suggest a bet amount of 0 instead of being forced to recommend at least 100.",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enhance-the-main-info-dashboard-page-with-additional-useful-user-friendly-features-that-improve-the-overall-app-experience-such-as-quick-access-to-reset-app-memory-visual-summary-of-strategy-profile-performance-recent-race-outcomes-summary-or-model-mood-confidence-trend-indicators",
+      "title": "Enhance the main info/dashboard page with additional useful user-friendly features that improve the overall app experience, such as: quick access to reset app memory, visual summary of strategy profile performance, recent race outcomes summary, or model mood/confidence trend indicators.",
+      "reqIds": [
+        "REQ-60"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-streak-tracking-logic-to-differentiate-between-three-streak-types-win-streak-1st-place-finishes-only-placer-streak-2nd-or-3rd-place-finishes-and-lower-streak-4th-6th-place-finishes-store-and-maintain-these-three-separate-streak-counters-per-contender-in-the-on-device-learned-state",
+      "title": "Update the streak tracking logic to differentiate between three streak types: Win Streak (1st place finishes only), Placer Streak (2nd or 3rd place finishes), and Lower Streak (4th-6th place finishes). Store and maintain these three separate streak counters per contender in the on-device learned state.",
+      "reqIds": [
+        "REQ-61"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-incorporate-all-three-streak-types-win-streak-placer-streak-lower-streak-as-weighted-signals-in-the-prediction-model-alongside-existing-factors-market-odds-recent-form-history-stats-consistency-hot-streak-override-assign-appropriate-feature-weights-so-positive-streaks-win-placer-increase-predicted-probability-while-negative-streaks-lower-decrease-it",
+      "title": "Incorporate all three streak types (Win Streak, Placer Streak, Lower Streak) as weighted signals in the prediction model alongside existing factors (market odds, recent form, history stats, consistency, hot streak override). Assign appropriate feature weights so positive streaks (Win, Placer) increase predicted probability while negative streaks (Lower) decrease it.",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-stats-view-to-display-all-three-streak-types-win-streak-placer-streak-lower-streak-for-each-contender-alongside-existing-win-place-show-percentages-and-recent-form-using-clear-english-labels-and-visual-indicators-emojis-or-color-coding-to-communicate-streak-strength",
+      "title": "Update the Stats view to display all three streak types (Win Streak, Placer Streak, Lower Streak) for each contender alongside existing Win/Place/Show percentages and recent form, using clear English labels and visual indicators (emojis or color coding) to communicate streak strength.",
+      "reqIds": [
+        "REQ-63"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enhance-the-hot-streak-override-logic-to-apply-only-to-win-streaks-4-consecutive-1st-place-finishes-not-placer-streaks-or-lower-streaks-ensuring-that-the-temporary-probability-boost-is-reserved-for-contenders-with-sustained-winning-performance",
+      "title": "Enhance the Hot Streak Override logic to apply only to Win Streaks (4+ consecutive 1st place finishes), not Placer Streaks or Lower Streaks, ensuring that the temporary probability boost is reserved for contenders with sustained winning performance.",
+      "reqIds": [
+        "REQ-64"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-refine-the-log-loss-feedback-loop-to-increase-feature-weight-adaptation-rate-when-the-model-consistently-misses-predictions-and-decrease-adaptation-rate-when-predictions-are-accurate-allowing-the-model-to-converge-faster-on-optimal-weights-without-overshooting",
+      "title": "Refine the log-loss feedback loop to increase feature weight adaptation rate when the model consistently misses predictions, and decrease adaptation rate when predictions are accurate, allowing the model to converge faster on optimal weights without overshooting.",
+      "reqIds": [
+        "REQ-65"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-odds-movement-detection-that-tracks-changes-in-odds-numerator-values-between-consecutive-races-for-the-same-contender-and-use-rising-odds-decreasing-confidence-from-the-market-as-a-negative-signal-and-falling-odds-increasing-market-confidence-as-a-positive-signal-in-the-prediction-model",
+      "title": "Add odds movement detection that tracks changes in odds numerator values between consecutive races for the same contender, and use rising odds (decreasing confidence from the market) as a negative signal and falling odds (increasing market confidence) as a positive signal in the prediction model.",
+      "reqIds": [
+        "REQ-66"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-contender-momentum-scoring-that-weights-recent-race-outcomes-more-heavily-than-older-outcomes-exponential-decay-so-a-contender-s-recent-3-5-races-contribute-more-to-their-predicted-probability-than-races-from-10-races-ago-improving-responsiveness-to-form-changes",
+      "title": "Implement contender momentum scoring that weights recent race outcomes more heavily than older outcomes (exponential decay), so a contender's recent 3-5 races contribute more to their predicted probability than races from 10+ races ago, improving responsiveness to form changes.",
+      "reqIds": [
+        "REQ-67"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-ensemble-diversity-scoring-to-the-prediction-output-that-shows-how-much-the-various-signals-odds-streaks-form-consistency-agree-or-disagree-on-the-top-pick-when-signals-strongly-agree-increase-confidence-when-signals-diverge-reduce-confidence-and-flag-the-prediction-as-uncertain-in-the-ui",
+      "title": "Add ensemble diversity scoring to the prediction output that shows how much the various signals (odds, streaks, form, consistency) agree or disagree on the top pick. When signals strongly agree, increase confidence; when signals diverge, reduce confidence and flag the prediction as uncertain in the UI.",
+      "reqIds": [
+        "REQ-68"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-explain-the-pick-breakdown-to-include-the-three-new-streak-signal-contributions-win-streak-x-placer-streak-y-lower-streak-z-alongside-existing-signals-ensuring-the-breakdown-remains-scannable-and-does-not-overwhelm-users-with-too-many-metrics",
+      "title": "Update the Explain the Pick breakdown to include the three new streak signal contributions (Win Streak: +X, Placer Streak: +Y, Lower Streak: -Z) alongside existing signals, ensuring the breakdown remains scannable and does not overwhelm users with too many metrics.",
+      "reqIds": [
+        "REQ-69"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-odds-numerator-input-field-in-the-new-entry-flow-entryflow-tsx-so-the-placeholder-text-displays-0-when-the-field-is-empty-replacing-any-existing-placeholder-text",
+      "title": "Update the odds numerator input field in the New Entry flow (EntryFlow.tsx) so the placeholder text displays '0' when the field is empty, replacing any existing placeholder text.",
+      "reqIds": [
+        "REQ-70"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-position-a-non-editable-1-label-immediately-to-the-right-of-each-odds-numerator-input-field-in-the-new-entry-flow-to-visually-represent-the-fractional-format-with-a-fixed-denominator-of-1",
+      "title": "Position a non-editable '/1' label immediately to the right of each odds numerator input field in the New Entry flow to visually represent the fractional format with a fixed denominator of 1.",
+      "reqIds": [
+        "REQ-71"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -423,6 +692,126 @@
     {
       "id": "AR-19",
       "summary": "Change bet sizing guidance constraints to allow a 100 minimum bet (keep 10,000 maximum)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Change the horse odds numerator input placeholder/example value to show \"0\" until the user enters a value",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "Remove place/podium margin inputs from the race recording section (stop capturing/storing margins in outcome logging UI)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Update on-device race model to store full odds as { numerator, denominator } or as decimal odds (float), not numerator alone",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Compute and store implied probability (denominator / (numerator + denominator)) for every saved race",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Ensure contender identity (name/number) is stored separately from lane/slot index (1-6) in each race record",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Store predicted probability + actual result (1 if win, 0 if not) per race for calibration tracking",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Add session window (e.g., last 50 races) and compute both lifetime + recent stats, then blend them in learning logic",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Update model weight adjustment to use log-loss-based feedback: loss = -log(predictedProbOfWinner), then adjust weights to reduce loss",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "Add value edge output to prediction flow: edge = predictedProb – impliedProb, and display it in UI",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Update bet sizing to factor in edge + variance: small edge or high variance → 1k–2k; decent edge + medium variance → 4k–6k; strong edge + low variance → 8k–10k",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Add on-device cached computed stats per contender (wins, places, form, etc.) to avoid full recomputation on every app open",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Add a \"Model Mood\" indicator (High/Medium/Low confidence) based on calibration + recent accuracy",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "Add a \"Do Not Bet\" mode: recommend Skip this race when no contender has meaningful edge (predictedProb not beating impliedProb enough)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Add an \"Explain the Pick\" breakdown showing contribution per signal (e.g., Odds Signal: +0.18, Recent Form: +0.11, History: +0.06, Consistency: -0.03, Final Confidence: 72%)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Add a \"Hot Streak Override\": if a contender hits podium 4+ times in a row, temporarily bump its probability even if lifetime stats disagree",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-35",
+      "summary": "Add \"Strategy Profiles\": let users pick Safe Mode, Value Mode, Balanced, or Aggressive (same model, different weighting presets)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-36",
+      "summary": "Add \"RNG Tilt\" detection: if the model starts missing badly for multiple races, trigger a warning (\"Pattern shift detected. Reducing bet size temporarily.\")",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-38",
+      "summary": "Add a new main info page with counters for total races run, prediction accuracy, and ROI",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-39",
+      "summary": "Change bet amount constraints to 0 minimum and 10,000 maximum, and allow custom input (not just increments of 1,000)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-40",
+      "summary": "Differentiate streak tracking: Win streaks for 1st place only, separate placer streak for 2nd/3rd, lower-tier streak for 4th-6th, and incorporate all streak types into prediction model alongside other factors",
       "reqIds": [],
       "status": "pending"
     }
